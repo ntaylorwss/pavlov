@@ -1,0 +1,2 @@
+matplotlib==2.2.2
+keras-rl==0.4.0

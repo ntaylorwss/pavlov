@@ -1,0 +1,6 @@
+#!/bin/bash
+if [[ $(basename `pwd`) != docker ]]
+then
+    cd docker/
+fi
+docker build -t gym .

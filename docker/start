@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Start in root always
+if [[ $(basename `pwd`) == docker ]]
+then
+    cd ../
+fi
+docker run --name gym -d -v $PWD:/home -p 8888:8888 gym
