@@ -10,3 +10,4 @@ RUN pip install 'gym[all]'
 COPY requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
+CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root

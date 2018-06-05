@@ -5,4 +5,23 @@ if [[ $(basename `pwd`) == docker ]]
 then
     cd ../
 fi
-docker run --name gym -d -v $PWD:/home -p 8888:8888 gym
+
+docker ps -a | grep gym -q
+if [ $? -eq 0 ]; then
+    docker rm -f gym
+fi
+
+port="8888"
+while true;
+do
+    echo "Trying port = $port"
+    netstat -ntpl 2> /dev/null | grep $port -q 
+    if [ $? -eq 1 ]; then
+        docker run --name gym -d -v $PWD:/home -v /tmp/.X11-unix:/tmp/.X11-unix \
+                   -e DISPLAY=$DISPLAY -p $port:8888 gym
+        echo "Using port $port"
+        break
+    else
+        ((port--))
+    fi
+done
