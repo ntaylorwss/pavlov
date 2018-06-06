@@ -61,6 +61,7 @@ class combine_consecutive:
             if self.fun == 'max':    out = out.max(axis=-1)
             elif self.fun == 'min':  out = out.min(axis=-1)
             elif self.fun == 'mean': out = out.mean(axis=-1)
-            else:               out = out.max(axis=-1)
+            elif self.fun == 'diff': out = out[..., -1] - out[..., 0]
+            else:                    out = out.max(axis=-1)
         self.previous_frames.append(state)
         return out
