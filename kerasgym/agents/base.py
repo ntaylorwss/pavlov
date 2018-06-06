@@ -10,7 +10,7 @@ class Agent:
     """Defines interface of agents, implements run_episode and reset. run_timestep should be
        defined by the child class."""
     def __init__(self, env, state_processing_fns, model, action_processing_fn, explorer,
-                 buffer_size, batch_size,
+                 buffer_size, batch_size, repeated_actions,
                  plt=None, ipy_display=None, is_learning=True):
         self.env = env
         self.env_state = self.env.reset()
@@ -21,15 +21,16 @@ class Agent:
         self.explorer.add_to_agent(self)
         self.replay_buffer = ReplayBuffer(buffer_size)
         self.batch_size = batch_size
+        self.repeated_actions = repeated_actions
         self.is_learning = is_learning
 
         # display
         self.plt = plt
         self.ipy_display = ipy_display
-        self.episode_frames = []
+        self.renders_by_episode = []
 
     def render_gif(self, episode=0):
-        frames = self.episode_frames[episode]
+        frames = self.renders_by_episode[episode]
         self.plt.figure(figsize=(frames[0].shape[1] / 72.0,
                                  frames[0].shape[0] / 72.0), dpi = 72)
         patch = self.plt.imshow(frames[0])
@@ -45,8 +46,6 @@ class Agent:
         self.env.reset()
 
     def run_timestep(self):
-        self.episode_frames[-1].append(self.env.render(mode='rgb_array'))
-
         state = self.env_state
         for state_processor in self.state_processors:
             state = state_processor(state, self.env)
@@ -54,7 +53,10 @@ class Agent:
         action = self.explorer.add_exploration(self.model.predict(state))
         consumable = self.action_processor(action, self.env)
 
-        self.env_state, reward, done, info = self.env.step(consumable)
+        for i in range(self.repeated_actions):
+            self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
+            self.env_state, reward, done, info = self.env.step(consumable)
+            if done: break
         self.explorer.step()
 
         next_state = self.env_state
@@ -69,7 +71,7 @@ class Agent:
         return reward, done
 
     def run_episode(self):
-        self.episode_frames.append([])
+        self.renders_by_episode.append([])
         while True:
             reward, done = self.run_timestep()
             if done: break
