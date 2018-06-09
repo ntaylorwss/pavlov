@@ -1,2 +1,4 @@
 notebooks/.ipynb_checkpoints/
 __pycache__/
+kerasgym/agents/keep_running.txt
+logdir/

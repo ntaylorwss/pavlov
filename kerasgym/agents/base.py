@@ -4,11 +4,13 @@ from datetime import datetime
 from JSAnimation.IPython_display import display_animation
 from matplotlib import animation
 from .replay_buffer import ReplayBuffer
+from .metrics import MetricMonitor
 
 
 class Agent:
     """Defines interface of agents, implements run_episode and reset. run_timestep should be
        defined by the child class."""
+
     def __init__(self, env, state_processing_fns, model, action_processing_fn, explorer,
                  buffer_size, batch_size, repeated_actions,
                  plt=None, ipy_display=None, is_learning=True):
@@ -23,11 +25,16 @@ class Agent:
         self.batch_size = batch_size
         self.repeated_actions = repeated_actions
         self.is_learning = is_learning
+        self.metric_monitor = MetricMonitor(self, '/home/kerasgym/logdir')
 
         # display
         self.plt = plt
         self.ipy_display = ipy_display
         self.renders_by_episode = []
+
+        # empty keep_running file
+        with open('/home/kerasgym/agents/keep_running.txt', 'w') as f:
+            pass
 
     def render_gif(self, episode=0):
         frames = self.renders_by_episode[episode]
@@ -54,10 +61,13 @@ class Agent:
         consumable = self.action_processor(action, self.env)
 
         for i in range(self.repeated_actions):
-            self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
+            if self.plt:
+                self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
             self.env_state, reward, done, info = self.env.step(consumable)
             if done: break
-        self.explorer.step()
+
+        self.explorer.step(done)
+        self.metric_monitor.step(reward)
 
         next_state = self.env_state
         for state_processor in self.state_processors:
@@ -68,11 +78,28 @@ class Agent:
             batch = self.replay_buffer.get_batch(self.batch_size)
             self.model.fit(**batch)
 
+
         return reward, done
 
     def run_episode(self):
         self.renders_by_episode.append([])
         while True:
             reward, done = self.run_timestep()
-            if done: break
+            if done:
+                self.metric_monitor.write_summary()
+                self.metric_monitor.new_episode()
+                break
         self.env_state = self.env.reset()
+
+    def run_indefinitely(self):
+        i = 0
+        while True:
+            self.run_episode()
+            with open('/home/kerasgym/agents/keep_running.txt') as f:
+                contents = f.read().strip()
+                if contents == 'False':
+                    print("Stopping.")
+                    break
+                else:
+                    print(f"End of episode {i}. Keep running...")
+            i += 1

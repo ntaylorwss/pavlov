@@ -18,7 +18,7 @@ do
     netstat -ntpl 2> /dev/null | grep $port -q 
     if [ $? -eq 1 ]; then
         docker run --name gym -d -v $PWD:/home -v /tmp/.X11-unix:/tmp/.X11-unix \
-                   -e DISPLAY=$DISPLAY -p $port:8888 gym
+                   -e DISPLAY=$DISPLAY -p $port:8888 -p 6006:6006 gym
         echo "Using port $port"
         break
     else

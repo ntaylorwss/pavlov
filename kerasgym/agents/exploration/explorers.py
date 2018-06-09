@@ -34,8 +34,8 @@ class EpsilonGreedy(Explorer):
             action[action_num] = 1
         return action
 
-    def step(self):
-        self.schedule.step()
+    def step(self, new_episode):
+        self.schedule.step(new_episode)
         self.epsilon = self.schedule.get()
 
     @property

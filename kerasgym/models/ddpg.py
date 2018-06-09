@@ -9,12 +9,12 @@ from keras.optimizers import Adam
 class DDPGModel:
     def __init__(self, base_topology, action_dim,
                  actor_activation, gamma, tau, actor_alpha, critic_alpha):
-        session = tf.Session()
-        K.set_session(session)
+        self.session = tf.Session()
+        K.set_session(self.session)
         self.gamma = gamma
-        self.actor = ActorNetwork(session, base_topology, action_dim,
+        self.actor = ActorNetwork(self.session, base_topology, action_dim,
                                   actor_activation, tau, actor_alpha)
-        self.critic = CriticNetwork(session, base_topology, action_dim,
+        self.critic = CriticNetwork(self.session, base_topology, action_dim,
                                     tau, critic_alpha)
 
     def fit(self, states, actions, rewards, next_states, dones):
