@@ -1,3 +1,5 @@
+import numpy as np
+
 def twoDcont_to_index():
     def _twoDcont_to_index(pred, env):
         action = (int(pred[0] * env.n_rows), int(pred[1] * env.n_cols))
@@ -11,13 +13,15 @@ def twoDindex_to_index():
     return _twoDindex_to_index
 
 
-def argmax():
-    def _argmax(pred, env):
-        return max(range(len(pred)), key = lambda i: pred[i])
-    return _argmax
+def argmax_scalar():
+    def _argmax_scalar(pred, env):
+        return np.random.choice(np.flatnonzero(pred == pred.max()))
+    return _argmax_scalar
 
 
-def identity():
-    def _identity(pred, env):
-        return pred
-    return _identity
+def scalar_to_onehot():
+    def _scalar_to_onehot(pred, env):
+        out = np.zeros(env.action_space.n)
+        out[pred] = 1
+        return out
+    return _scalar_to_onehot

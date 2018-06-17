@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 import keras.backend as K
 from keras.models import Model
-from keras.layers import Input, Dense, Conv2D, Flatten, concatenate, Activation
 from keras.optimizers import Adam
+from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Add
 
 
 class DDPGModel:
@@ -16,6 +16,8 @@ class DDPGModel:
                                   actor_activation, tau, actor_alpha)
         self.critic = CriticNetwork(self.session, base_topology, action_dim,
                                     tau, critic_alpha)
+        self.in_shape = self.actor.in_shape
+        self.action_dim = self.actor.action_dim
 
     def fit(self, states, actions, rewards, next_states, dones):
         target_actions = self.actor.target_predict(next_states, single=False)
@@ -46,6 +48,7 @@ class ActorNetwork:
         self.tau = tau
         self.alpha = alpha
         self.base_input, self.base_output = base_topology
+        self.in_shape = self.base_input.shape.as_list()[1:]
         self.model = self._create_model()
         self.target_model = self._create_model()
         self.action_grad_input = tf.placeholder(tf.float32, [None, self.action_dim])
@@ -106,9 +109,11 @@ class CriticNetwork:
             base_out = Flatten()(self.base_output)
         else:
             base_out = self.base_output
-        base_and_action = concatenate([base_out, action_in])
-        out = Dense(self.action_dim*2, activation='selu')(base_and_action)
-        out = Dense(1)(out)
+        # add the state and action by first making them same shape
+        base_out = Dense(self.action_dim)(base_out)
+        action_mid = Dense(self.action_dim)(action_in)
+        base_and_action = Add()([base_out, action_mid])
+        out = Dense(1)(base_and_action)
         model = Model([self.base_input, action_in], out)
         opt = Adam(lr=self.alpha)
         model.compile(loss='mse', optimizer=opt)
@@ -140,16 +145,3 @@ class CriticNetwork:
         return self.session.run(self.action_grads, feed_dict={
                     self.model.input[0]: states,
                     self.model.input[1]: actions})[0]
-
-
-def cnn_model_base(in_shape, conv_layer_sizes, fc_layer_sizes,
-                   kernel_sizes, strides, activation):
-    state_in = Input(shape=in_shape)
-    out = state_in
-    for l_size, k_size, stride in zip(conv_layer_sizes, kernel_sizes, strides):
-        out = Conv2D(filters=l_size, kernel_size=k_size, padding='same',
-                     strides=stride, activation=activation)(out)
-    out = Flatten()(out)
-    for l_size in fc_layer_sizes:
-        out = Dense(l_size, activation=activation)(out)
-    return state_in, out

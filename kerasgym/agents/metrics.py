@@ -1,11 +1,13 @@
+from collections import deque
+import numpy as np
 import tensorflow as tf
 
 
-class MetricMonitor:
-    def __init__(self, agent, save_path):
+class Monitor:
+    def __init__(self, agent, save_path, n_episode_avg=1):
         self.agent = agent
-        self.total_reward = 0.
-        self.duration = 0
+        self.rewards = deque([0], maxlen=n_episode_avg)
+        self.durations = deque([0], maxlen=n_episode_avg)
         self.episode = 0
         self.save_path = save_path
         self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
@@ -23,15 +25,15 @@ class MetricMonitor:
         summary_op = tf.summary.merge_all()
         return summary_placeholders, update_ops, summary_op
 
-    def _get_stats(self):
-        return [self.total_reward, self.duration]
+    def get_stats(self):
+        return [np.mean(self.rewards), np.mean(self.durations)]
 
     def step(self, reward):
-        self.total_reward += reward
-        self.duration += 1
+        self.rewards[-1] += reward
+        self.durations[-1] += 1
 
     def write_summary(self):
-        stats = self._get_stats()
+        stats = self.get_stats()
         for i in range(len(stats)):
             self.agent.model.session.run(self.update_ops[i], feed_dict={
                 self.summary_placeholders[i]: float(stats[i])
@@ -40,6 +42,6 @@ class MetricMonitor:
             self.summary_writer.add_summary(summary_str, self.episode+1)
 
     def new_episode(self):
-        self.total_reward = 0.
-        self.duration = 0
+        self.rewards.append(0)
+        self.durations.append(0)
         self.episode += 1

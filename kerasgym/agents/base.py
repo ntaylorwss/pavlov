@@ -1,105 +1,128 @@
 import numpy as np
+from collections import deque
 import time
 from datetime import datetime
+import matplotlib.pyplot as plt
 from JSAnimation.IPython_display import display_animation
 from matplotlib import animation
+from IPython import display
 from .replay_buffer import ReplayBuffer
-from .metrics import MetricMonitor
+from .metrics import Monitor
 
 
 class Agent:
     """Defines interface of agents, implements run_episode and reset. run_timestep should be
        defined by the child class."""
 
-    def __init__(self, env, state_processing_fns, model, action_processing_fn, explorer,
-                 buffer_size, batch_size, repeated_actions,
-                 plt=None, ipy_display=None, is_learning=True):
+    def __init__(self, env, state_processing_fns, model, ptoc_fn, ctol_fn, explorer,
+                 buffer_size, batch_size, warmup_length=0, repeated_actions=1,
+                 report_freq=100, state_dtype=np.float32):
         self.env = env
-        self.env_state = self.env.reset()
+        self.reset()
         self.state_processors = state_processing_fns
         self.model = model
-        self.action_processor = action_processing_fn
+        self.pred_to_consumable = ptoc_fn # for passing to environment
+        self.consumable_to_learnable = ctol_fn # for storing and learning
         self.explorer = explorer
         self.explorer.add_to_agent(self)
-        self.replay_buffer = ReplayBuffer(buffer_size)
+        self.replay_buffer = ReplayBuffer(buffer_size, model.in_shape, model.action_dim, dtype=state_dtype)
         self.batch_size = batch_size
+        self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
-        self.is_learning = is_learning
-        self.metric_monitor = MetricMonitor(self, '/home/kerasgym/logdir')
+        self.monitor = Monitor(self, '/home/kerasgym/logdir', n_episode_avg=10)
 
         # display
-        self.plt = plt
-        self.ipy_display = ipy_display
         self.renders_by_episode = []
 
         # empty keep_running file
         with open('/home/kerasgym/agents/keep_running.txt', 'w') as f:
             pass
 
+        # warm up agent by running some random episodes and building a memory
+        self._warmup()
+
     def render_gif(self, episode=0):
         frames = self.renders_by_episode[episode]
-        self.plt.figure(figsize=(frames[0].shape[1] / 72.0,
+        plt.figure(figsize=(frames[0].shape[1] / 72.0,
                                  frames[0].shape[0] / 72.0), dpi = 72)
-        patch = self.plt.imshow(frames[0])
-        self.plt.axis('off')
+        patch = plt.imshow(frames[0])
+        plt.axis('off')
 
         def animate(i):
             patch.set_data(frames[i])
 
-        anim = animation.FuncAnimation(self.plt.gcf(), animate, frames = len(frames), interval=50)
-        display(display_animation(anim, default_mode='loop'))
+        anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames), interval=50)
+        display.display(display_animation(anim, default_mode='loop'))
 
     def reset(self):
-        self.env.reset()
+        self.env_state = self.env.reset()
 
-    def run_timestep(self):
-        state = self.env_state
+    def _warmup(self):
+        for i in range(self.warmup_length):
+            reward, done = self.run_timestep(warming=True)
+            if done:
+                self.reset()
+
+    def run_timestep(self, warming=False, render=False):
+        start_state = self.env_state
         for state_processor in self.state_processors:
-            state = state_processor(state, self.env)
+            start_state = state_processor(start_state, self.env)
 
-        action = self.explorer.add_exploration(self.model.predict(state))
-        consumable = self.action_processor(action, self.env)
+        if warming:
+            consumable_action = self.env.action_space.sample()
+        else:
+            pred = self.explorer.add_exploration(self.model.predict(start_state))
+            consumable_action = self.pred_to_consumable(pred, self.env)
+        learnable_action = self.consumable_to_learnable(consumable_action, self.env)
 
+        reward = 0.
         for i in range(self.repeated_actions):
-            if self.plt:
+            if not warming and render:
                 self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
-            self.env_state, reward, done, info = self.env.step(consumable)
+            self.env_state, r, done, info = self.env.step(consumable_action)
+            reward += r
             if done: break
 
-        self.explorer.step(done)
-        self.metric_monitor.step(reward)
+        if not warming:
+            self.explorer.step(done)
+            self.monitor.step(reward)
 
-        next_state = self.env_state
-        for state_processor in self.state_processors:
-            next_state = state_processor(next_state, self.env)
+        if done:
+            next_state = np.zeros(self.replay_buffer.state_buffer.shape[1:])
+        else:
+            next_state = self.env_state
+            for state_processor in self.state_processors:
+                next_state = state_processor(next_state, self.env)
 
-        self.replay_buffer.add(state, action, reward, next_state, done)
-        if self.is_learning and self.replay_buffer.current_size > self.batch_size:
+        self.replay_buffer.add(start_state, learnable_action, reward, next_state, done)
+        if not warming and self.replay_buffer.current_size >= self.batch_size:
             batch = self.replay_buffer.get_batch(self.batch_size)
             self.model.fit(**batch)
 
-
         return reward, done
 
-    def run_episode(self):
+    def run_episode(self, i, render=False):
         self.renders_by_episode.append([])
+        total_reward = 0.
         while True:
-            reward, done = self.run_timestep()
+            reward, done = self.run_timestep(render=render)
+            total_reward += reward
             if done:
-                self.metric_monitor.write_summary()
-                self.metric_monitor.new_episode()
+                self.monitor.write_summary()
+                self.monitor.new_episode()
                 break
-        self.env_state = self.env.reset()
+        self.reset()
+        if i % 10 == 0:
+            r, d = self.monitor.get_stats()
+            print(f"Episode: {i}. Average Reward: {r}. Average Duration: {d}. Explore: {self.explorer.explore_rate}")
 
-    def run_indefinitely(self):
+    def run_indefinitely(self, report_freq=100, render=False):
         i = 0
         while True:
-            self.run_episode()
+            self.run_episode(i, render)
             with open('/home/kerasgym/agents/keep_running.txt') as f:
                 contents = f.read().strip()
                 if contents == 'False':
                     print("Stopping.")
                     break
-                else:
-                    print(f"End of episode {i}. Keep running...")
             i += 1

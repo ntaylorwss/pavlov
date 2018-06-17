@@ -17,21 +17,19 @@ class Explorer:
 
 
 class EpsilonGreedy(Explorer):
-    def __init__(self, schedule):
+    def __init__(self, schedule, discrete=True):
         super().__init__()
-        self.returns_processed = True
         self.schedule = schedule
         self.epsilon = self.schedule.get()
-        self.n_explores = 0
-        self.n_actions = 0
+        self.discrete = discrete
 
     def add_exploration(self, action):
-        self.n_actions += 1
         if random.random() < self.epsilon:
-            self.n_explores += 1
-            action_num = self.agent.env.action_space.sample()
-            action = np.zeros(self.agent.env.action_space.n)
-            action[action_num] = 1
+            action = self.agent.env.action_space.sample()
+            if self.discrete:
+                ohe_action = np.zeros(self.agent.model.action_dim)
+                ohe_action[action] = 1
+                return ohe_action
         return action
 
     def step(self, new_episode):
@@ -40,4 +38,19 @@ class EpsilonGreedy(Explorer):
 
     @property
     def explore_rate(self):
-        return self.n_explores / self.n_actions
+        return round(self.schedule.get(), 3)
+
+
+class EpsilonNoisy(Explorer):
+    def __init__(self, eps_schedule, mu_schedule, sigma_schedule):
+        super.__init__()
+        self.eps_schedule = schedule
+        self.mu_schedule = mu_schedule
+        self.sigma_schedule = sigma_schedule
+        self.epsilon = self.eps_schedule.get()
+        self.mu = self.mu_schedule.get()
+        self.sigma = self.sigma_schedule.get()
+
+    def add_exploration(self, action):
+        if random.random() < self.epsilon:
+            pass
