@@ -25,3 +25,7 @@ do
         ((port--))
     fi
 done
+
+if [ ! -f docker/jupyter_notebook_config.json ]; then
+    docker exec -it gym bash -c 'jupyter notebook password --config /home/docker/jupyter_notebook_config.json'
+fi
