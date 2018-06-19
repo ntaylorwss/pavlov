@@ -1,4 +1,4 @@
-FROM tensorflow_gpu
+FROM ntaylor22/tensorflow-gpu
 COPY jupyter_notebook_config.json /root/.jupyter/jupyter_notebook_config.json
 
 # gym requirements
@@ -11,3 +11,5 @@ COPY requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
 CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root
+RUN echo '#!/bin/bash\necho False > /home/kerasgym/agents/keep_running.txt' \
+    > /usr/bin/pause && chmod +x /usr/bin/pause
