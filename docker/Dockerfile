@@ -1,4 +1,4 @@
-FROM ntaylor22/tensorflow-gpu
+FROM ntaylor22/tensorflow-cpu
 COPY jupyter_notebook_config.json /root/.jupyter/jupyter_notebook_config.json
 
 # gym requirements

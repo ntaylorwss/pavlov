@@ -1,6 +1,42 @@
 #!/bin/bash
+
+# Start in docker/ always
 if [[ $(basename `pwd`) != docker ]]
 then
     cd docker/
 fi
-docker build -t gym .
+
+# set jupyter password if it hasn't been already
+if [ ! -f jupyter_notebook_config.json ]; then
+    read -p "Setting jupyter password requires pulling small (70MB) docker image (to be deleted after). Proceed with password config? [Y/n] " do_password
+    if [[ $do_password =~ ^[Yy]$ ]]
+    then
+        echo Pulling...
+        docker pull dwhitena/minimal-jupyter 2>&1 > /dev/null
+        echo Pulled.
+        docker run -it --rm -v $PWD:/home/jovyan/notebooks dwhitena/minimal-jupyter \
+            jupyter notebook password --config /home/jovyan/notebooks/jupyter_notebook_config.json
+        #docker exec -it gym bash -c 'jupyter notebook password --config /home/docker/jupyter_notebook_config.json'
+    fi
+fi
+
+if grep -Fq 'base_image' Dockerfile
+then
+    read -p "Do you have a GPU? [Y/n] " gpu
+    if [[ $gpu =~ ^[Yy]$ ]]
+    then
+        sed -i 's/base_image/ntaylor22\/tensorflow-gpu/g' Dockerfile
+        docker build -t gym-gpu .
+    else
+        sed -i 's/base_image/ntaylor22\/tensorflow-cpu/g' Dockerfile
+        docker build -t gym-cpu .
+    fi
+else
+    if grep -Fq 'tensorflow-gpu' Dockerfile
+    then
+        docker build -t gym-gpu .
+    else
+        docker build -t gym-cpu .
+    fi
+fi
+
