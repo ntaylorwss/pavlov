@@ -8,7 +8,8 @@ from keras.layers import concatenate, Add, Multiply
 
 
 class DQNModel:
-    def __init__(self, base_topology, action_dim, gamma, tau, optimizer):
+    def __init__(self, action_dim, base_topology, gamma, tau, optimizer):
+        self.pred_type = 'value'
         self.session = tf.Session()
         K.set_session(self.session)
         self.base_input, self.base_output = base_topology

@@ -7,8 +7,9 @@ from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Add
 
 
 class DDPGModel:
-    def __init__(self, base_topology, action_dim,
+    def __init__(self, action_dim, base_topology,
                  actor_activation, gamma, tau, actor_alpha, critic_alpha):
+        self.pred_type = 'policy'
         self.session = tf.Session()
         K.set_session(self.session)
         self.gamma = gamma

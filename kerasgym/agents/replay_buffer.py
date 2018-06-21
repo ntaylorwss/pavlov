@@ -4,31 +4,41 @@ from collections import deque
 
 
 class ReplayBuffer:
-    def __init__(self, buffer_size, state_dims, action_dim, dtype):
+    def __init__(self, buffer_size, state_dims, action_dim, state_dtype,
+                 keys=['states','actions','rewards','next_states','dones']):
         self.current_idx = 0
         self.current_size = 0
         self.buffer_size = buffer_size
         self.dtype = dtype
-        self.state_buffer = np.zeros([buffer_size] + state_dims, dtype=dtype)
-        self.nextstate_buffer = np.zeros([buffer_size] + state_dims, dtype=dtype)
-        self.action_buffer = np.zeros((buffer_size, action_dim))
-        self.reward_buffer = np.zeros(buffer_size)
-        self.done_buffer = np.zeros(buffer_size)
+        self.keys = keys
+        self.buffer = self._initialize_buffer(state_dims, action_dim)
+
+    def _initialize_buffer(self, state_dims, action_dim):
+        buf = {}
+        for key in self.keys:
+            if key in ['states', 'next_states']:
+                buf[key] = np.zeros([buffer_size] + state_dims, dtype=state_dtype)
+            elif key == 'actions':
+                buf[key] = np.zeros((buffer_size, action_dim))
+            else:
+                buf[key] = np.zeros(buffer_size)
 
     def get_batch(self, batch_size):
         inds = np.random.randint(self.current_size, size=batch_size)
-        return {'states': self.state_buffer[inds,:],
-                'actions': self.action_buffer[inds,:],
-                'rewards': self.reward_buffer[inds],
-                'next_states': self.nextstate_buffer[inds,:],
-                'dones': self.done_buffer[inds]}
+        out = {}
+        for key in self.buffer:
+            if len(self.buffer[key].shape) > 1:
+                out[key] = self.buffer[key][inds,:]
+            else:
+                out[key] = self.buffer[key][inds]
+        return out
 
-    def add(self, state, action, reward, next_state, done):
-        self.state_buffer[self.current_idx] = state.astype(self.dtype)
-        self.nextstate_buffer[self.current_idx] = next_state.astype(self.dtype)
-        self.action_buffer[self.current_idx] = action
-        self.reward_buffer[self.current_idx] = reward
-        self.done_buffer[self.current_idx] = done
+    def add(self, **keyed_obs):
+        for key, value in keyed_obs.items():
+            if key in ['states', 'next_states']:
+                self.buffer[key][self.current_idx] = value.astype(self.state_dtype)
+            else:
+                self.buffer[key][self.current_idx] = value
 
         if self.current_size < self.buffer_size:
             self.current_size += 1
