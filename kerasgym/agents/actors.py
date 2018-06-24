@@ -1,10 +1,9 @@
 import random
 import numpy as np
+from ..util import get_space_type
 
-invalid_fn = lambda action: raise TypeError("Incompatible space or prediction type.")
 
-
-class Explorer:
+class Actor:
     def __init__(self):
         self.explore_and_convert_fns = {
             'discrete': {'policy': self._discrete_policy,
@@ -16,24 +15,35 @@ class Explorer:
                             'value': self._multibinary_value}}
 
     def configure(self, agent):
-        s = str(type(agent.env.action_space))
-        self.space_type = s[::-1][2:s[::-1].find('.')][::-1]
+        self.action_space = agent.env.action_space
+        self.space_type = get_space_type(self.action_space)
         self.pred_type = agent.model.pred_type
-        self.agent = agent
 
-    def explore_and_convert(self, pred):
+    def convert_pred(self, pred):
         return self.add_exploration_fns[self.space_type][self.pred_type](pred)
+
+    def warming_action(self):
+        space = self.agent.env.action_space
+        a_for_env = space.sample()
+        if self.pred_type == 'discrete':
+            a_for_model = np.eye(space.n)[a_for_env]
+        elif self.pred_type == 'multidiscrete':
+            a_for_model = [np.eye(n)[a_for_env[i]] for i, n in enumerate(space.nvec)]
+        elif self.pred_type == 'box':
+            a_for_model = a_for_env
+        elif self.pred_type == 'multibinary':
+            a_for_model = [np.eye(2)[env_a] for env_a in a_for_env]
+        return a_for_model, a_for_env
 
     def step(self):
         pass
 
 
-class EpsilonGreedy(Explorer):
+class EpsilonGreedyActor(Actor):
     def __init__(self, schedule):
         super().__init__()
         self.schedule = schedule
         self.epsilon = self.schedule.get()
-        self.discrete = discrete
 
     def _discrete_policy(self, pred):
         if random.random() < self.epsilon:
@@ -43,33 +53,32 @@ class EpsilonGreedy(Explorer):
 
     def _discrete_value(self, pred):
         # policy and value are equivalent when argmaxing
-        return _discrete_policy(pred)
+        return self._discrete_policy(pred)
 
     def _multidiscrete_policy(self, pred):
+        # pred: list of np arrays of values for each choice in that action
         if random.random() < self.epsilon:
             return self.agent.env.action_space.sample()
         else:
             return np.array(list(map(np.argmax, pred)))
 
     def _multidiscrete_value(self, pred):
-        
+        # policy and value are equivalent when argmaxing
+        return self._multidiscrete_policy(pred)
 
     def _box_policy(self, pred):
+        if random.random() < self.epsilon:
+            return self.agent.env.action_space.sample()
+        else:
+            return pred
 
-    def _box_value(self, pred):
+    # no box_value because incompatible
 
     def _multibinary_policy(self, pred):
+        return self._discrete_policy(pred)
 
     def _multibinary_value(self, pred):
-
-    def add_exploration(self, pred):
-        if random.random() < self.epsilon:
-            action = self.agent.env.action_space.sample()
-            if self.discrete:
-                ohe_action = np.zeros(self.agent.model.action_dim)
-                ohe_action[action] = 1
-                return ohe_action
-        return action
+        return self._discrete_policy(pred)
 
     def step(self, new_episode):
         self.schedule.step(new_episode)
@@ -80,16 +89,12 @@ class EpsilonGreedy(Explorer):
         return round(self.schedule.get(), 3)
 
 
-class EpsilonNoisy(Explorer):
+class EpsilonNoisyActor(Actor):
     def __init__(self, eps_schedule, mu_schedule, sigma_schedule):
         super.__init__()
-        self.eps_schedule = schedule
+        self.eps_schedule = eps_schedule
         self.mu_schedule = mu_schedule
         self.sigma_schedule = sigma_schedule
         self.epsilon = self.eps_schedule.get()
         self.mu = self.mu_schedule.get()
         self.sigma = self.sigma_schedule.get()
-
-    def add_exploration(self, pred):
-        if random.random() < self.epsilon:
-            pass

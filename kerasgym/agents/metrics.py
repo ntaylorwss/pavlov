@@ -41,6 +41,15 @@ class Monitor:
             summary_str = self.agent.model.session.run(self.summary_op)
             self.summary_writer.add_summary(summary_str, self.episode+1)
 
+    def log_to_stdout(self):
+        avg_r = np.mean(self.rewards)
+        avg_d = np.mean(self.durations)
+        if episode > 0 and episode % 10 == 0:
+            s = "End of episode {self.episode}. "
+            s += "Average reward: {avg_r}."
+            s += "Average duration: {avg_d}."
+            print(s)
+
     def new_episode(self):
         self.rewards.append(0)
         self.durations.append(0)
