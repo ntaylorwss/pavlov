@@ -13,6 +13,7 @@ def cnn_model_base(in_shape, conv_layer_sizes, fc_layer_sizes,
         out = Dense(l_size, activation=activation)(out)
     return state_in, out
 
+
 def dense_model_base(in_shape, layer_sizes, activation):
     state_in = Input(shape=in_shape)
     out = state_in

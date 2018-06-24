@@ -20,12 +20,12 @@ class DQNModel:
 
     def configure(self, action_space):
         """Gets the action space, finishes off model based on that."""
-        self.model = self._create_model(action_space)
-        self.target_model = self._create_model(action_space)
         self.action_space = action_space
         self.action_type = get_action_type(action_space)
+        self.model = self._create_model()
+        self.target_model = self._create_model()
 
-    def _create_model(self, action_space):
+    def _create_model(self):
         if self.base_output.shape.ndims > 2:
             base_out = Flatten()(self.base_output)
         else:
@@ -74,13 +74,13 @@ class DQNModel:
             if not action:
                 action = [np.ones(n) for n in self.action_space.nvec]
             if single:
-                action = [np.expand_dims(a, 0) for a in self.action_space.nvec]
+                action = [np.expand_dims(a, 0) for a in action]
             model_in = [state] + action
         elif self.action_type == 'MultiBinary':
             if not action:
                 action = [np.ones(2) for _ in range(self.action_space.n)]
             if single:
-                action = [np.expand_dims(a, 0) for a in range(self.action_space.n)]
+                action = [np.expand_dims(a, 0) for a in action]
             model_in = [state] + action
 
         return model.predict(model_in)

@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from ..util import get_space_type
+from ..util import get_action_type, ActionModelMismatchError
 
 
 class Actor:
@@ -16,11 +16,11 @@ class Actor:
 
     def configure(self, agent):
         self.action_space = agent.env.action_space
-        self.space_type = get_space_type(self.action_space)
+        self.action_type = get_action_type(self.action_space)
         self.pred_type = agent.model.pred_type
 
     def convert_pred(self, pred):
-        return self.add_exploration_fns[self.space_type][self.pred_type](pred)
+        return self.add_exploration_fns[self.action_type][self.pred_type](pred)
 
     def warming_action(self):
         space = self.agent.env.action_space
@@ -40,10 +40,10 @@ class Actor:
 
 
 class EpsilonGreedyActor(Actor):
-    def __init__(self, schedule):
+    def __init__(self, epsilon_schedule):
         super().__init__()
-        self.schedule = schedule
-        self.epsilon = self.schedule.get()
+        self.epsilon_schedule = epsilon_schedule
+        self.epsilon = self.epsilon_schedule.get()
 
     def _discrete_policy(self, pred):
         if random.random() < self.epsilon:
@@ -72,7 +72,8 @@ class EpsilonGreedyActor(Actor):
         else:
             return pred
 
-    # no box_value because incompatible
+    def _box_value(self, pred):
+        raise ActionModelMismatchError('box', 'value')
 
     def _multibinary_policy(self, pred):
         return self._discrete_policy(pred)
@@ -81,12 +82,12 @@ class EpsilonGreedyActor(Actor):
         return self._discrete_policy(pred)
 
     def step(self, new_episode):
-        self.schedule.step(new_episode)
-        self.epsilon = self.schedule.get()
+        self.epsilon_schedule.step(new_episode)
+        self.epsilon = self.epsilon_schedule.get()
 
     @property
     def explore_rate(self):
-        return round(self.schedule.get(), 3)
+        return round(self.epsilon_schedule.get(), 3)
 
 
 class EpsilonNoisyActor(Actor):

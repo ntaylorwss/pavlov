@@ -5,7 +5,7 @@ from matplotlib import animation
 from IPython import display
 from .replay_buffer import ReplayBuffer
 from .metrics import Monitor
-from ..util import get_action_type
+from ..util import get_action_type, ActionModelMismatchError
 
 
 class Agent:
@@ -18,17 +18,17 @@ class Agent:
         self.env = env
         self.env_state = self.env.reset()
         self.state_pipeline = state_pipeline
-        self.action_type = get_action_type(env.action_space)
         self.model = model
         # check if model and action space are compatible
         for space_type, pred_type in self.incompatibles:
-            if self.action_type == space_type and self.model.pred_type == pred_type:
-                raise TypeError("Incompatible action space ({space_type}) and  model type ({pred_type})")
-        self.model.configure(self)
+            if (get_action_type(self.env.action_space) == space_type
+                    and self.model.pred_type == pred_type):
+                raise ActionModelMismatchError(space_type, pred_type)
+        self.model.configure(self.env.action_space)
         self.actor = actor
         self.actor.configure(self)
         self.replay_buffer = ReplayBuffer(buffer_size, model.in_shape,
-                                          model.action_dim, state_dtype)
+                                          self.env.action_space, state_dtype)
         self.batch_size = batch_size
         self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
