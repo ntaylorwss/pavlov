@@ -20,15 +20,15 @@ class Actor:
         self.pred_type = agent.model.pred_type
 
     def convert_pred(self, pred):
-        return self.add_exploration_fns[self.action_type][self.pred_type](pred)
+        return self.explore_and_convert_fns[self.action_type][self.pred_type](pred)
 
     def warming_action(self):
-        space = self.agent.env.action_space
-        a_for_env = space.sample()
+        a_for_env = self.action_space.sample()
         if self.pred_type == 'discrete':
-            a_for_model = np.eye(space.n)[a_for_env]
+            a_for_model = np.eye(self.action_space.n)[a_for_env]
         elif self.pred_type == 'multidiscrete':
-            a_for_model = [np.eye(n)[a_for_env[i]] for i, n in enumerate(space.nvec)]
+            a_for_model = [np.eye(n)[a_for_env[i]]
+                           for i, n in enumerate(self.action_space.nvec)]
         elif self.pred_type == 'box':
             a_for_model = a_for_env
         elif self.pred_type == 'multibinary':
@@ -47,30 +47,33 @@ class EpsilonGreedyActor(Actor):
 
     def _discrete_policy(self, pred):
         if random.random() < self.epsilon:
-            return self.agent.env.action_space.sample()
+            a_for_env = self.action_space.sample()
         else:
-            return np.argmax(pred)
+            a_for_env = np.argmax(pred)
+        a_for_model = np.eye(self.action_space.n)[a_for_env]
+        return a_for_model, a_for_env
 
     def _discrete_value(self, pred):
-        # policy and value are equivalent when argmaxing
         return self._discrete_policy(pred)
 
     def _multidiscrete_policy(self, pred):
-        # pred: list of np arrays of values for each choice in that action
         if random.random() < self.epsilon:
-            return self.agent.env.action_space.sample()
+            a_for_env = self.action_space.sample()
         else:
-            return np.array(list(map(np.argmax, pred)))
+            a_for_env = np.array(list(map(np.argmax, pred)))
+        a_for_model = [np.eye(n)[a_for_env[i]]
+                       for i, n in enumerate(self.action_space.nvec)]
+        return a_for_model, a_for_env
 
     def _multidiscrete_value(self, pred):
-        # policy and value are equivalent when argmaxing
         return self._multidiscrete_policy(pred)
 
     def _box_policy(self, pred):
         if random.random() < self.epsilon:
-            return self.agent.env.action_space.sample()
+            both_actions = self.action_space.sample()
+            return both_actions, both_actions
         else:
-            return pred
+            return pred, pred
 
     def _box_value(self, pred):
         raise ActionModelMismatchError('box', 'value')

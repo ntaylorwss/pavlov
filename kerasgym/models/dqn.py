@@ -62,27 +62,36 @@ class DQNModel:
         self.model.train_on_batch([states, actions], targets)
         self.target_fit()
 
-    def _predict(self, model, state, action, single):
+    def _process_model_input(self, state, action, single):
         state = np.expand_dims(state, 0) if single else state
-        if self.action_type == 'Discrete':
-            if not action:
-                action = np.ones(self.action_space.n)
-            if single:
+        if self.action_type == 'discrete':
+            if action and single:
                 action = np.expand_dims(action, 0)
+            elif single:
+                action = np.ones((1, self.action_space.n))
+            else:
+                action = np.ones((state.shape[0], self.action_space.n))
             model_in = [state, action]
-        elif self.action_type == 'MultiDiscrete':
-            if not action:
-                action = [np.ones(n) for n in self.action_space.nvec]
-            if single:
+        elif self.action_type == 'multidiscrete':
+            if action and single:
                 action = [np.expand_dims(a, 0) for a in action]
+            elif single:
+                action = [np.ones((1, n)) for n in self.action_space.nvec]
+            else:
+                action = [np.ones((state.shape[0], n)) for n in self.action_space.nvec]
             model_in = [state] + action
-        elif self.action_type == 'MultiBinary':
-            if not action:
-                action = [np.ones(2) for _ in range(self.action_space.n)]
-            if single:
+        elif self.action_type == 'multibinary':
+            if action and single:
                 action = [np.expand_dims(a, 0) for a in action]
+            elif single:
+                action = [np.ones((1, 2)) for _ in range(self.action_space.n)]
+            else:
+                action = [np.ones((state.shape[0], 2)) for _ in range(self.action_space.n)]
             model_in = [state] + action
+        return model_in
 
+    def _predict(self, model, state, action, single):
+        model_in = self._process_model_input(state, action, single)
         return model.predict(model_in)
 
     def predict(self, state, action=None, single=True):

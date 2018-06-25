@@ -4,10 +4,11 @@ import tensorflow as tf
 
 
 class Monitor:
-    def __init__(self, agent, save_path, n_episode_avg=1):
+    def __init__(self, agent, save_path, report_freq=10, n_episode_avg=1):
         self.agent = agent
         self.rewards = deque([0], maxlen=n_episode_avg)
         self.durations = deque([0], maxlen=n_episode_avg)
+        self.report_freq = report_freq
         self.episode = 0
         self.save_path = save_path
         self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
@@ -44,10 +45,10 @@ class Monitor:
     def log_to_stdout(self):
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
-        if episode > 0 and episode % 10 == 0:
-            s = "End of episode {self.episode}. "
-            s += "Average reward: {avg_r}."
-            s += "Average duration: {avg_d}."
+        if self.episode > 0 and self.episode % self.report_freq == 0:
+            s = f"End of episode {self.episode}. "
+            s += f"Average reward: {avg_r}."
+            s += f"Average duration: {avg_d}."
             print(s)
 
     def new_episode(self):

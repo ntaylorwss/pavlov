@@ -92,7 +92,7 @@ class Agent:
             self.monitor.step(reward)
 
         if done:
-            next_state = np.zeros(self.replay_buffer.state_buffer.shape[1:])
+            next_state = np.zeros(self.replay_buffer.states.shape[1:])
         else:
             next_state = self._transform_state(self.env_state)
 
@@ -112,8 +112,8 @@ class Agent:
             if done:
                 self.monitor.write_summary()
                 self.monitor.new_episode()
+                self.reset()
                 break
-            self.reset()
             self.monitor.log_to_stdout()
 
     def run_indefinitely(self, render=False):
