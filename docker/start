@@ -17,11 +17,11 @@ do
     echo "Trying port = $port"
     netstat -ntpl 2> /dev/null | grep $port -q 
     if [ $? -eq 1 ]; then
-        if [[ $(docker images | grep 'tensorflow-gpu') ]]
+        if [[ $(docker images | grep 'gym-gpu') ]]
         then
-            image=ntaylor22/tensorflow-gpu
+            image=gym-gpu
         else
-            image=ntaylor22/tensorflow-cpu
+            image=gym-cpu
         fi
         docker run --name gym -d -v $PWD:/home -v /tmp/.X11-unix:/tmp/.X11-unix \
                    -e DISPLAY=$DISPLAY -p $port:8888 -p 6006:6006 $image

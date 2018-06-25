@@ -1,5 +1,6 @@
-FROM ntaylor22/tensorflow-cpu
-COPY jupyter_notebook_config.json /root/.jupyter/jupyter_notebook_config.json
+FROM base_image
+
+COPY jupyter_notebook_config.json /root/.jupyter/
 
 # gym requirements
 RUN apt-get update && apt-get install -y zlib1g-dev libjpeg-dev xvfb \

@@ -6,37 +6,22 @@ then
     cd docker/
 fi
 
-# set jupyter password if it hasn't been already
-if [ ! -f jupyter_notebook_config.json ]; then
-    read -p "Setting jupyter password requires pulling small (70MB) docker image (to be deleted after). Proceed with password config? [Y/n] " do_password
-    if [[ $do_password =~ ^[Yy]$ ]]
-    then
-        echo Pulling...
-        docker pull dwhitena/minimal-jupyter 2>&1 > /dev/null
-        echo Pulled.
-        docker run -it --rm -v $PWD:/home/jovyan/notebooks dwhitena/minimal-jupyter \
-            jupyter notebook password --config /home/jovyan/notebooks/jupyter_notebook_config.json
-        #docker exec -it gym bash -c 'jupyter notebook password --config /home/docker/jupyter_notebook_config.json'
-    fi
-fi
-
-if grep -Fq 'base_image' Dockerfile
+read -p "Build GPU-enabled image? [Y/n] " gpu
+if [[ $gpu =~ ^[Yy]$ ]]
 then
-    read -p "Do you have a GPU? [Y/n] " gpu
-    if [[ $gpu =~ ^[Yy]$ ]]
-    then
-        sed -i 's/base_image/ntaylor22\/tensorflow-gpu/g' Dockerfile
-        docker build -t gym-gpu .
-    else
-        sed -i 's/base_image/ntaylor22\/tensorflow-cpu/g' Dockerfile
-        docker build -t gym-cpu .
-    fi
+    type=gpu
 else
-    if grep -Fq 'tensorflow-gpu' Dockerfile
-    then
-        docker build -t gym-gpu .
-    else
-        docker build -t gym-cpu .
-    fi
+    type=cpu
 fi
 
+sed "s/base_image/ntaylor22\/tensorflow-$type/g" Dockerfile > Dockerfile2
+docker build  -t gym-$type -f Dockerfile2 .
+
+if [ ! -f jupyter_notebook_config.json ]
+then
+    script="from notebook.auth import passwd; c = passwd(); open('/home/pass_hash','w').write(c)"
+    docker run --rm -it -v $PWD:/home gym-$type python3.6 -c "$script"
+    echo "{\"NotebookApp\": {\"password\": \"`cat pass_hash`\"}}" > jupyter_notebook_config.json
+fi
+  
+rm -f Dockerfile2 pass_hash
