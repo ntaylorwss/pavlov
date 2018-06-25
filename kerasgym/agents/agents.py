@@ -32,8 +32,7 @@ class Agent:
         self.batch_size = batch_size
         self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
-        self.monitor = Monitor(self, '/home/kerasgym/logdir', n_episode_avg=10,
-                               report_freq=report_freq)
+        self.monitor = Monitor(self, '/home/kerasgym/logdir', report_freq=report_freq)
         # display
         self.renders_by_episode = []
         # empty keep_running file
@@ -103,7 +102,7 @@ class Agent:
 
         return reward, done
 
-    def run_episode(self, render=False):
+    def run_episode(self, render=False, log=True):
         self.renders_by_episode.append([])
         total_reward = 0.
         while True:
@@ -114,11 +113,12 @@ class Agent:
                 self.monitor.new_episode()
                 self.reset()
                 break
+        if log:
             self.monitor.log_to_stdout()
 
-    def run_indefinitely(self, render=False):
+    def run_indefinitely(self, render=False, log=True):
         while True:
-            self.run_episode(render=render)
+            self.run_episode(render=render, log=log)
             with open('/home/kerasgym/agents/keep_running.txt') as f:
                 contents = f.read().strip()
                 if contents == 'False':

@@ -56,17 +56,17 @@ class ExponentialDecay(Schedule):
 
 
 class ScopingPeriodic(Schedule):
-    def __init__(self, start_value=0.7, target_value=0.05, duration=1000, threshold=0.0001,
+    def __init__(self, start_value, target_value, duration, threshold=0.0001,
                  amp=0.2, period=0.1, interval=-1):
         super().__init__(start_value, interval)
         self.target_value = target_value
-        self.decay_factor = ((1 - self.start_value) - np.log(threshold)) / duration
+        self.decay_factor = ((1 - self.value) - np.log(threshold)) / duration
         self.amp = amp
         self.period = period
         self.restart_prob = 1. / duration
 
     def _decay(self, t):
-        return np.exp(-self.decay_factor * t + (self.start_value - 1)) + self.target_value
+        return np.exp(-self.decay_factor * t + (self.value - 1)) + self.target_value
 
     def _periodic(self, t):
         return self.amp * np.sin(self.period * t) + 0.5
