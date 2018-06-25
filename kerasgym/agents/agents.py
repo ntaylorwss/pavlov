@@ -4,7 +4,7 @@ from JSAnimation.IPython_display import display_animation
 from matplotlib import animation
 from IPython import display
 from .replay_buffer import ReplayBuffer
-from .metrics import Monitor
+from .monitor import Monitor
 from ..util import get_action_type, ActionModelMismatchError
 
 
