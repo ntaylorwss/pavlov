@@ -7,10 +7,7 @@ then
 fi
 cd docker/
 
-docker ps -a | grep gym -q
-if [ $? -eq 0 ]; then
-    docker rm -f gym
-fi
+docker rm -f gym
 
 port="8888"
 while true;
