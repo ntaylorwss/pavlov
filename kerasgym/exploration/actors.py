@@ -1,4 +1,3 @@
-import random
 import numpy as np
 from ..util import get_action_type, ActionModelMismatchError
 
@@ -46,7 +45,7 @@ class EpsilonGreedyActor(Actor):
         self.epsilon = self.epsilon_schedule.get()
 
     def _discrete_policy(self, pred):
-        if random.random() < self.epsilon:
+        if np.random.random() < self.epsilon:
             a_for_env = self.action_space.sample()
         else:
             a_for_env = np.argmax(pred)
@@ -57,7 +56,7 @@ class EpsilonGreedyActor(Actor):
         return self._discrete_policy(pred)
 
     def _multidiscrete_policy(self, pred):
-        if random.random() < self.epsilon:
+        if np.random.random() < self.epsilon:
             a_for_env = self.action_space.sample()
         else:
             a_for_env = np.array(list(map(np.argmax, pred)))
@@ -69,7 +68,7 @@ class EpsilonGreedyActor(Actor):
         return self._multidiscrete_policy(pred)
 
     def _box_policy(self, pred):
-        if random.random() < self.epsilon:
+        if np.random.random() < self.epsilon:
             both_actions = self.action_space.sample()
             return both_actions, both_actions
         else:
@@ -102,3 +101,5 @@ class EpsilonNoisyActor(Actor):
         self.epsilon = self.eps_schedule.get()
         self.mu = self.mu_schedule.get()
         self.sigma = self.sigma_schedule.get()
+
+    # TODO: this whole thing
