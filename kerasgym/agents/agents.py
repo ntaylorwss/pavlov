@@ -73,17 +73,17 @@ class Agent:
     def run_timestep(self, warming=False, render=False):
         start_state = self._transform_state(self.env_state)
         if warming:
-            a_for_model, a_for_env = self.actor.warming_action()
+            action_for_model, action_for_env = self.actor.warming_action()
         else:
             pred = self.model.predict(start_state)
-            a_for_model, a_for_env = self.actor.convert_pred(pred)  # includes exploration
+            action_for_model, action_for_env = self.actor.convert_pred(pred)  # includes exploration
 
         timestep_reward = 0.
         for i in range(self.repeated_actions):
             if not warming and render:
                 rendered_frame = self.env.render(mode='rgb_array')
                 self.renders_by_episode[-1].append(rendered_frame)
-            self.env_state, frame_reward, done, info = self.env.step(a_for_env)
+            self.env_state, frame_reward, done, info = self.env.step(action_for_env)
             timestep_reward += frame_reward
             if done:
                 break
@@ -97,7 +97,7 @@ class Agent:
         else:
             next_state = self._transform_state(self.env_state)
 
-        self.replay_buffer.add(start_state, a_for_model, reward, next_state, done)
+        self.replay_buffer.add(start_state, action_for_model, reward, next_state, done)
         if not warming and self.replay_buffer.current_size >= self.batch_size:
             batch = self.replay_buffer.get_batch(self.batch_size)
             self.model.fit(**batch)
