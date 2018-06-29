@@ -78,12 +78,12 @@ class Agent:
             pred = self.model.predict(start_state)
             a_for_model, a_for_env = self.actor.convert_pred(pred)  # includes exploration
 
-        reward = 0.
+        timestep_reward = 0.
         for i in range(self.repeated_actions):
             if not warming and render:
                 self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
-            self.env_state, r, done, info = self.env.step(a_for_env)
-            reward += r
+            self.env_state, frame_reward, done, info = self.env.step(a_for_env)
+            timestep_reward += frame_reward
             if done:
                 break
 
