@@ -32,7 +32,7 @@ class Agent:
         self.batch_size = batch_size
         self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
-        self.monitor = Monitor(self, '/home/kerasgym/logdir', report_freq=report_freq)
+        self.monitor = Monitor(self, '/var/log/logdir', report_freq=report_freq)
         # display
         self.renders_by_episode = []
         # empty keep_running file
