@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Start in docker/ always
-if [[ $(basename `pwd`) != docker ]]
+# Start in root always
+if [ ! -f .isroot ]
 then
-    cd docker/
+    echo "Must be run from root of project."; exit
 fi
+cd docker/
 
 read -p "Build GPU-enabled image? [Y/n] " gpu
 

@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # Start in root always
-if [[ $(basename `pwd`) == docker ]]
+if [ ! -f .isroot ]
 then
-    cd ../
+    echo "Must be run from root of project."; exit
 fi
+cd docker/
 
 docker ps -a | grep gym -q
 if [ $? -eq 0 ]; then
