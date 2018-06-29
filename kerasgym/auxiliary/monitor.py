@@ -1,4 +1,4 @@
-from collections import deque
+import collections.deque
 import numpy as np
 import tensorflow as tf
 
@@ -6,8 +6,8 @@ import tensorflow as tf
 class Monitor:
     def __init__(self, agent, save_path, report_freq=10):
         self.agent = agent
-        self.rewards = deque([0], maxlen=report_freq)
-        self.durations = deque([0], maxlen=report_freq)
+        self.rewards = collections.deque([0], maxlen=report_freq)
+        self.durations = collections.deque([0], maxlen=report_freq)
         self.report_freq = report_freq
         self.episode = 0
         self.save_path = save_path

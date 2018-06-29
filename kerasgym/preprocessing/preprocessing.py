@@ -1,5 +1,5 @@
 import numpy as np
-from collections import deque
+import collections.deque
 from skimage.transform import resize
 
 
@@ -35,7 +35,7 @@ def downsample(new_shape):
 
 class stack_consecutive:
     def __init__(self, n_frames=4):
-        self.previous_frames = deque([], maxlen=n_frames-1)
+        self.previous_frames = collections.deque([], maxlen=n_frames-1)
 
     def __call__(self, state, env):
         n_missing = self.previous_frames.maxlen - len(self.previous_frames)
@@ -50,7 +50,7 @@ class stack_consecutive:
 
 class combine_consecutive:
     def __init__(self, n_previous_frames=1, fun='max'):
-        self.previous_frames = deque([], maxlen=n_previous_frames)
+        self.previous_frames = collections.deque([], maxlen=n_previous_frames)
         self.fun = fun
 
     def __call__(self, state, env):
