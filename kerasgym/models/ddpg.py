@@ -5,6 +5,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Add
 
+# TODO: like DQN, make this model work with any action space by drowning it in if statements.
 
 class DDPGModel:
     def __init__(self, action_dim, base_topology,
