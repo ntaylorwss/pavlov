@@ -81,7 +81,8 @@ class Agent:
         timestep_reward = 0.
         for i in range(self.repeated_actions):
             if not warming and render:
-                self.renders_by_episode[-1].append(self.env.render(mode='rgb_array'))
+                rendered_frame = self.env.render(mode='rgb_array')
+                self.renders_by_episode[-1].append(rendered_frame)
             self.env_state, frame_reward, done, info = self.env.step(a_for_env)
             timestep_reward += frame_reward
             if done:
