@@ -1,4 +1,5 @@
-FROM base_image
+ARG baseimage
+FROM $baseimage
 
 COPY jupyter_notebook_config.json /root/.jupyter/
 
@@ -6,6 +7,7 @@ COPY jupyter_notebook_config.json /root/.jupyter/
 RUN apt-get update && apt-get install -y zlib1g-dev libjpeg-dev xvfb \
                                          libav-tools xorg-dev python-opengl \
                                          libboost-all-dev libsdl2-dev swig cmake
+
 RUN pip install 'gym[all]'
 
 COPY requirements.txt /tmp

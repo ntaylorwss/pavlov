@@ -9,18 +9,17 @@ fi
 read -p "Build GPU-enabled image? [Y/n] " gpu
 if [[ $gpu =~ ^[Yy]$ ]]
 then
-    type=gpu
+    compute_device=gpu
 else
-    type=cpu
+    compute_device=cpu
 fi
 
-sed "s/base_image/ntaylor22\/tensorflow-$type/g" Dockerfile > Dockerfile2
-docker build  -t gym-$type -f Dockerfile2 .
+docker build  -t gym-$compute_device --build-arg baseimage=ntaylor22/tensorflow-$compute_device .
 
 if [ ! -f jupyter_notebook_config.json ]
 then
     script="from notebook.auth import passwd; c = passwd(); open('/home/pass_hash','w').write(c)"
-    docker run --rm -it -v $PWD:/home gym-$type python3.6 -c "$script"
+    docker run --rm -it -v $PWD:/home gym-$compute_device python3.6 -c "$script"
     echo "{\"NotebookApp\": {\"password\": \"`cat pass_hash`\"}}" > jupyter_notebook_config.json
 fi
   
