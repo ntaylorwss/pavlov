@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from JSAnimation.IPython_display import display_animation
-from matplotlib import animation
-from IPython import display
+import JSAnimation.IPython_display as js_display
+import IPython.display as ipy_display
+import matplotlib.animation
 from ..auxilary.replay_buffer import ReplayBuffer
 from ..auxiliary.monitor import Monitor
 from ..util import get_action_type, ActionModelMismatchError
@@ -51,8 +51,9 @@ class Agent:
         def animate(i):
             patch.set_data(frames[i])
 
-        anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
-        display.display(display_animation(anim, default_mode='loop'))
+        anim = matplotlib.animation.FuncAnimation(plt.gcf(), animate,
+                                                  frames=len(frames), interval=50)
+        ipy_display(js_display.display_animation(anim, default_mode='loop'))
 
     def reset(self):
         self.env_state = self.env.reset()
