@@ -16,21 +16,21 @@ class Actor:
     def configure(self, agent):
         self.action_space = agent.env.action_space
         self.action_type = get_action_type(self.action_space)
-        self.pred_type = agent.model.pred_type
+        self.prediction_type = agent.model.prediction_type
 
     def convert_pred(self, pred):
-        return self.explore_and_convert_fns[self.action_type][self.pred_type](pred)
+        return self.explore_and_convert_fns[self.action_type][self.prediction_type](pred)
 
     def warming_action(self):
         a_for_env = self.action_space.sample()
-        if self.pred_type == 'discrete':
+        if self.prediction_type == 'discrete':
             a_for_model = np.eye(self.action_space.n)[a_for_env]
-        elif self.pred_type == 'multidiscrete':
+        elif self.prediction_type == 'multidiscrete':
             a_for_model = [np.eye(n)[a_for_env[i]]
                            for i, n in enumerate(self.action_space.nvec)]
-        elif self.pred_type == 'box':
+        elif self.prediction_type == 'box':
             a_for_model = a_for_env
-        elif self.pred_type == 'multibinary':
+        elif self.prediction_type == 'multibinary':
             a_for_model = [np.eye(2)[env_a] for env_a in a_for_env]
         return a_for_model, a_for_env
 
