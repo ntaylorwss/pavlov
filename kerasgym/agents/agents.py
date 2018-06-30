@@ -23,7 +23,7 @@ class Agent:
         # check if model and action space are compatible
         for space_type, model_type in self.incompatibles:
             if (self.env.action_space.__class__.__name__.lower() == space_type
-                    and type(self.model) == model_type):
+                    and self.model.__class__.__name__.lower() == model_type):
                 raise util.exceptions.ActionModelMismatchError(space_type, pred_type)
         self.model.configure(self.env.action_space)
         self.actor = actor
