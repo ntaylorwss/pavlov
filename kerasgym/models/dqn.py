@@ -4,7 +4,7 @@ import keras.backend as K
 from keras.models import Model
 from keras.layers import Input, Dense, Flatten
 from keras.layers import Multiply
-from ..util import get_action_type
+from .. import util
 
 
 class DQNModel:
@@ -21,7 +21,7 @@ class DQNModel:
     def configure(self, action_space):
         """Gets the action space, finishes off model based on that."""
         self.action_space = action_space
-        self.action_type = get_action_type(action_space)
+        self.action_type = action_space.__class__.__name__.lower()
         self.model = self._create_model()
         self.target_model = self._create_model()
 
@@ -62,7 +62,7 @@ class DQNModel:
         self.model.train_on_batch([states, actions], targets)
         self.target_fit()
 
-    def _process_model_input(self, state, action, single):
+    def _predict(self, model, state, action, single):
         state = np.expand_dims(state, 0) if single else state
         if self.action_type == 'discrete':
             if action and single:
@@ -88,10 +88,6 @@ class DQNModel:
             else:
                 action = [np.ones((state.shape[0], 2)) for _ in range(self.action_space.n)]
             model_in = [state] + action
-        return model_in
-
-    def _predict(self, model, state, action, single):
-        model_in = self._process_model_input(state, action, single)
         return model.predict(model_in)
 
     def predict(self, state, action=None, single=True):

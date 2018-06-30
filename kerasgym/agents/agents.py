@@ -5,12 +5,13 @@ import IPython.display as ipy_display
 import matplotlib.animation
 from ..auxilary.replay_buffer import ReplayBuffer
 from ..auxiliary.monitor import Monitor
-from ..util import get_action_type, ActionModelMismatchError
+from .. import util
 
 
 class Agent:
-    # incompatible pairs of action space type and model pred type
-    incompatibles = [('box', 'value')]
+    # incompatible pairs of action space type and model type
+    incompatibles = [('box', 'dqnmodel'), ('discrete', 'ddpgmodel'),
+                     ('multidiscrete', 'ddpgmodel'), ('multibinary', 'ddpgmodel')]
 
     def __init__(self, env, state_pipeline, model, actor,
                  buffer_size, batch_size, warmup_length, repeated_actions=1,
@@ -20,10 +21,10 @@ class Agent:
         self.state_pipeline = state_pipeline
         self.model = model
         # check if model and action space are compatible
-        for space_type, pred_type in self.incompatibles:
-            if (get_action_type(self.env.action_space) == space_type
-                    and self.model.pred_type == pred_type):
-                raise ActionModelMismatchError(space_type, pred_type)
+        for space_type, model_type in self.incompatibles:
+            if (self.env.action_space.__class__.__name__.lower() == space_type
+                    and type(self.model) == model_type):
+                raise util.exceptions.ActionModelMismatchError(space_type, pred_type)
         self.model.configure(self.env.action_space)
         self.actor = actor
         self.actor.configure(self)

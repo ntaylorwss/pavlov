@@ -1,25 +1,30 @@
 import numpy as np
-import tensorflow as tf
 import keras.backend as K
 from keras.models import Model
 from keras.optimizers import Adam
-from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Add
-
-# TODO: like DQN, make this model work with any action space by drowning it in if statements.
+from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Multiply
+from .. import util
 
 class DDPGModel:
-    def __init__(self, action_dim, base_topology,
-                 actor_activation, gamma, tau, actor_alpha, critic_alpha):
+    def __init__(self, base_topology, activation, gamma, tau,
+                 actor_optimizer, critic_optimizer):
         self.pred_type = 'policy'
         self.session = tf.Session()
         K.set_session(self.session)
+        self.base_input, self.base_output = base_topology
+        self.in_shape = base_topology[0].shape.as_list()[1:]
         self.gamma = gamma
-        self.actor = ActorNetwork(self.session, base_topology, action_dim,
-                                  actor_activation, tau, actor_alpha)
-        self.critic = CriticNetwork(self.session, base_topology, action_dim,
-                                    tau, critic_alpha)
-        self.in_shape = self.actor.in_shape
-        self.action_dim = self.actor.action_dim
+        self.tau = tau
+        self.actor_optimizer = actor_optimizer
+        self.critic_optimizer = critic_optimizer
+
+    def configure(self, action_space):
+        self.action_space = action_space
+        self.action_type = util.get_action_type(action_space)
+        self.actor = ActorNetwork(self, self.session, self.base_input, self.base_output,
+                                  self.activation, self.tau, self.actor_optimizer)
+        self.critic = CriticNetwork(self, self.session, self.base_input, self.base_output,
+                                    self.activation, self.tau, self.critic_optimizer)
 
     def fit(self, states, actions, rewards, next_states, dones):
         target_actions = self.actor.target_predict(next_states, single=False)
@@ -41,31 +46,38 @@ class DDPGModel:
 
 
 class ActorNetwork:
-    def __init__(self, session, base_topology,
-                 action_dim, activation, tau, alpha):
+    def __init__(self, model, session, base_input, base_output,
+                 activation, tau, alpha, tf_optimizer):
+        self.model = model
         self.session = session
         K.set_session(self.session)
-        self.action_dim = action_dim
+        self.base_input, = base_input
+        self.base_output = base_output
         self.activation = activation
         self.tau = tau
         self.alpha = alpha
-        self.base_input, self.base_output = base_topology
         self.in_shape = self.base_input.shape.as_list()[1:]
         self.model = self._create_model()
         self.target_model = self._create_model()
-        self.action_grad_input = tf.placeholder(tf.float32, [None, self.action_dim])
+        self.action_grad_input = K.placeholder(shape=(None, self.action_dim))
         self.model_grad = tf.gradients(self.model.output, self.model.trainable_weights,
                                        -self.action_grad_input)
         grads = list(zip(self.model_grad, self.model.trainable_weights))
-        self.optimize = tf.train.AdamOptimizer(self.alpha).apply_gradients(grads)
-        self.session.run(tf.global_variables_initializer())
+        self.optimize = tf_optimizer.apply_gradients(grads)
 
     def _create_model(self):
         if self.base_output.shape.ndims > 2:
             out = Flatten()(self.base_output)
         else:
             out = self.base_output
-        out = Activation(self.activation)(Dense(self.action_dim)(out))
+
+        # make function out of activation argument if it isn't one already
+        if isinstance(self.activation, str):
+            act = Activation(self.activation)
+        else:
+            act = self.activation
+        # flatten action shape into vector
+        out = act(Dense(np.prod(self.model.action_space.shape)))
         return Model(self.base_input, out)
 
     def fit(self, states, action_gradients):
@@ -81,9 +93,14 @@ class ActorNetwork:
     def _predict(self, model, state, single):
         if single:
             state = np.expand_dims(state, 0)
-            return model.predict(state)[0]
+            pred = model.predict(state)[0]
+            if len(self.action_space.shape) > 2:
+                pred = pred.reshape(self.action_space.shape)
         else:
-            return model.predict(state)
+            pred = model.predict(state)
+            if len(self.action_space.shape) > 2:
+                pred = pred.reshape([pred.shape[0]] + list(self.action_space.shape))
+        return pred
 
     def predict(self, state, single=True):
         return self._predict(self.model, state, single)
@@ -93,32 +110,31 @@ class ActorNetwork:
 
 
 class CriticNetwork:
-    def __init__(self, session, base_topology, action_dim, tau, alpha):
+    def __init__(self, model, session, base_input, base_output, tau, optimizer):
+        self.model = model
         self.session = session
         K.set_session(self.session)
-        self.action_dim = action_dim
+        self.base_input = base_input
+        self.base_output = base_output
         self.tau = tau
-        self.alpha = alpha
-        self.base_input, self.base_output = base_topology
+        self.optimizer = optimizer
         self.model = self._create_model()
         self.target_model = self._create_model()
         self.action_grads = tf.gradients(self.model.output, self.model.input[1])
         self.session.run(tf.global_variables_initializer())
 
     def _create_model(self):
-        action_in = Input((self.action_dim,))
         if self.base_output.shape.ndims > 2:
             base_out = Flatten()(self.base_output)
         else:
             base_out = self.base_output
-        # add the state and action by first making them same shape
-        base_out = Dense(self.action_dim)(base_out)
-        action_mid = Dense(self.action_dim)(action_in)
-        base_and_action = Add()([base_out, action_mid])
-        out = Dense(1)(base_and_action)
+        in_shape = (np.prod(self.action_space.shape),)
+        action_in = Input(in_shape)
+        out = Dense(in_shape, activation='relu')(base_out)
+        out = Multiply()([out, action_in])
+        out = Dense(1)(out)
         model = Model([self.base_input, action_in], out)
-        opt = Adam(lr=self.alpha)
-        model.compile(loss='mse', optimizer=opt)
+        model.compile(loss='mse', optimizer=self.optimizer)
         return model
 
     def fit(self, states, actions, targets):
