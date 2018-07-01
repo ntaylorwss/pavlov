@@ -5,6 +5,7 @@ from keras.optimizers import Adam
 from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Multiply
 from .. import util
 
+
 class DDPGModel:
     def __init__(self, base_topology, activation, gamma, tau,
                  actor_optimizer, critic_optimizer):
