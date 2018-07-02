@@ -17,7 +17,7 @@ class Schedule:
         interval (int): update interval in number of timesteps.
     """
     def __init__(self, start_value, interval=-1):
-        self.t = 0
+        self.timestep = 0
         self.value = start_value
         self.interval = interval
 
@@ -28,12 +28,12 @@ class Schedule:
     def step(self, new_episode):
         """Wrap the schedule logic to determine based on interval when to iterate value."""
         if self.interval > 0:
-            if self.t % self.interval == 0:
+            if self.timestep % self.interval == 0:
                 self._step()
         else:
             if new_episode:
                 self._step()
-        self.t += 1
+        self.timestep += 1
 
     def get(self):
         """Get value, bounded in [0, 1]."""
@@ -66,7 +66,7 @@ class LinearDecay(Schedule):
         self.num_steps = num_steps
 
     def _step(self):
-        if self.t < self.num_steps:
+        if self.timestep < self.num_steps:
             self.value -= self.per_step
 
 
@@ -88,29 +88,29 @@ class ExponentialDecay(Schedule):
         self.decay_rate = decay_rate
 
     def _step(self):
-        self.value *= np.e ** (-self.decay_rate * self.t)
+        self.value *= np.e ** (-self.decay_rate * self.timestep)
 
 
 class ScopingPeriodic(Schedule):
     def __init__(self, start_value, target_value, duration, threshold=0.0001,
                  amp=0.2, period=0.1, interval=-1):
         super().__init__(start_value, interval)
-        self.target_value = target_value
+        self.timesteparget_value = target_value
         self.decay_factor = ((1 - self.value) - np.log(threshold)) / duration
         self.amp = amp
         self.period = period
         self.restart_prob = 1. / duration
 
     def _decay(self, t):
-        return np.exp(-self.decay_factor * t + (self.value - 1)) + self.target_value
+        return np.exp(-self.decay_factor * t + (self.value - 1)) + self.timesteparget_value
 
     def _periodic(self, t):
         return self.amp * np.sin(self.period * t) + 0.5
 
     def _step(self):
-        self.value = self._decay(self.t) * (0.5 + self._periodic(self.t))
+        self.value = self._decay(self.timestep) * (0.5 + self._periodic(self.timestep))
         if np.random.random() <= self.restart_prob:
-            self.t = 0
+            self.timestep = 0
 
 
 def graph_schedule(schedule, n_vals):
