@@ -8,6 +8,30 @@ from .. import util
 
 
 class DQNModel:
+    """A deep Q network model.
+
+    Used for value-based predictions in a discrete action space.
+    Takes in a base topology, which is a headless Keras computation graph for state transformation.
+    Adds layers to that as needed for action incorporation, produces state-action values.
+
+    Parameters:
+        base_topology (2-tuple (keras.Layer*2)): input and output layers of
+                                                 base network for state transformation.
+        gamma (float): discount factor for Q Learning.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        optimizer (keras.Optimizer): full optimizer object.
+
+    Member variables:
+        pred_type (str): hard-coded value associated with class, indicating whether
+                         it outputs a policy or action values for the state.
+        session (tf.Session): tensorflow session that the models live in.
+        base_input (keras.Layer): state input layer for both networks.
+        base_output (keras.Layer): state-transforming intermediate output layer.
+        in_shape (tuple(int)): shape of state input to `base_input` layer.
+        gamma (float): discount factor for value function.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        optimizer (keras.Optimizer): full optimizer object for critic network.
+    """
     def __init__(self, base_topology, gamma, tau, optimizer):
         self.pred_type = 'value'
         self.session = tf.Session()
@@ -19,13 +43,14 @@ class DQNModel:
         self.optimizer = optimizer
 
     def configure(self, action_space):
-        """Gets the action space, finishes off model based on that."""
+        """Associates model with action space from environment; finishes off model."""
         self.action_space = action_space
         self.action_type = action_space.__class__.__name__.lower()
         self.model = self._create_model()
         self.target_model = self._create_model()
 
     def _create_model(self):
+        """Extend `base_topology` to produce an action-value output (action as input)."""
         if self.base_output.shape.ndims > 2:
             base_out = Flatten()(self.base_output)
         else:
@@ -50,19 +75,29 @@ class DQNModel:
         model.compile(loss='mse', optimizer=self.optimizer)
         return model
 
-    def target_fit(self):
-        W = [self.tau*cw + (1-self.tau)*tw
-             for cw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
-        self.target_model.set_weights(W)
-
     def fit(self, states, actions, rewards, next_states, dones):
+        """Fit network to batch of observations from replay buffer."""
         max_next_q = np.max(self.target_predict(next_states, single=False), axis=1)
         targets = np.expand_dims(rewards + (1 - dones) * self.gamma * max_next_q, -1)
         targets = targets * actions  # makes it one-hot, value in the place of the action
         self.model.train_on_batch([states, actions], targets)
         self.target_fit()
 
+    def target_fit(self):
+        """Update target network towards main network according to `tau`."""
+        W = [self.tau*cw + (1-self.tau)*tw
+             for cw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
+        self.target_model.set_weights(W)
+
     def _predict(self, model, state, action, single):
+        """General function to predict value for state and action with given model.
+
+        Parameters:
+            model (keras.Model): either `self.model` or `self.target_model`.
+            state (np.array): state input to predict for; could be single observation or batch.
+            action (np.array): action input to predict for; could be single observation or batch.
+            single (bool): flag to indicate whether state/action input is single observation or batch.
+        """
         state = np.expand_dims(state, 0) if single else state
         if self.action_type == 'discrete':
             if action and single:
@@ -91,7 +126,9 @@ class DQNModel:
         return model.predict(model_in)
 
     def predict(self, state, action=None, single=True):
+        """Apply `_predict` with `self.model`."""
         return self._predict(self.model, state, action, single)
 
     def target_predict(self, state, action=None, single=True):
+        """Apply `_predict` with `self.target_model`."""
         return self._predict(self.target_model, state, action, single)

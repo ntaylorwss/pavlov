@@ -3,10 +3,43 @@ import keras.backend as K
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Multiply
-from .. import util
 
 
 class DDPGModel:
+    """A deep deterministic policy gradient model.
+
+    Used for policy-based predictions in a continuous action space.
+    Takes in a base topology, which is a headless Keras computation graph for state transformation.
+    Adds layers to that as needed for actor and critic networks, including incorporating actions.
+
+    Parameters:
+        base_topology (2-tuple (keras.Layer*2)): input and output layers of
+                                                 base network for state transformation.
+        activation (str/keras.Activation): final activation function just for actor model output.
+        gamma (float): discount factor for value function.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        actor_optimizer (tf.train.Optimizer): full optimizer object for actor network.
+                                              MUST be tensorflow type, not Keras, unfortunately.
+        critic_optimizer (keras.Optimizer): full optimizer object for critic network.
+
+    Member variables:
+        pred_type (str): hard-coded value associated with class, indicating whether
+                         it outputs a policy or action values for the state.
+        session (tf.Session): tensorflow session that the models live in.
+        base_input (keras.Layer): state input layer for both networks.
+        base_output (keras.Layer): state-transforming intermediate output layer.
+        in_shape (tuple(int)): shape of state input to `base_input` layer.
+        gamma (float): discount factor for value function.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        actor_optimizer (tf.train.Optimizer): full optimizer object for actor network.
+                                              MUST be tensorflow type, not Keras, unfortunately.
+        critic_optimizer (keras.Optimizer): full optimizer object for critic network.
+        action_space (gym.spaces.*): whole action space object from environment.
+        action_type (str): class name of action space.
+        actor (kerasgym.ActorNetwork): actor network. I/O: state -> policy vector.
+        critic (kerasgym.CriticNetwork): critic network. I/O: [state, action] -> value scalar.
+    """
+
     def __init__(self, base_topology, activation, gamma, tau,
                  actor_optimizer, critic_optimizer):
         self.pred_type = 'policy'
@@ -20,8 +53,9 @@ class DDPGModel:
         self.critic_optimizer = critic_optimizer
 
     def configure(self, action_space):
+        """Associate model with action space from environment; create actor and critic."""
         self.action_space = action_space
-        self.action_type = util.get_action_type(action_space)
+        self.action_type = action_space.__class__.__name__.lower()
         self.actor = ActorNetwork(self, self.session, self.base_input, self.base_output,
                                   self.activation, self.tau, self.actor_optimizer)
         self.critic = CriticNetwork(self, self.session, self.base_input, self.base_output,
@@ -47,8 +81,20 @@ class DDPGModel:
 
 
 class ActorNetwork:
+    """Actor component of DDPG model; the network that predicts a policy vector based on the state.
+
+    Parameters:
+        model (DDPGModel): instance of DDPGModel that Actor is associated with.
+        session (tf.Session): tensorflow session that the models live in.
+        base_input (keras.Layer): state input layer for both networks.
+        base_output (keras.Layer): state-transforming intermediate output layer.
+        activation (str/keras.Activation): final activation function just for actor model output.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        tf_optimizer (tf.train.Optimizer): full optimizer object.
+                                           MUST be tensorflow type, not Keras, unfortunately.
+    """
     def __init__(self, model, session, base_input, base_output,
-                 activation, tau, alpha, tf_optimizer):
+                 activation, tau, tf_optimizer):
         self.model = model
         self.session = session
         K.set_session(self.session)
@@ -56,7 +102,6 @@ class ActorNetwork:
         self.base_output = base_output
         self.activation = activation
         self.tau = tau
-        self.alpha = alpha
         self.in_shape = self.base_input.shape.as_list()[1:]
         self.model = self._create_model()
         self.target_model = self._create_model()
@@ -67,6 +112,7 @@ class ActorNetwork:
         self.optimize = tf_optimizer.apply_gradients(grads)
 
     def _create_model(self):
+        """Extend `base_topology` to produce a policy output."""
         if self.base_output.shape.ndims > 2:
             out = Flatten()(self.base_output)
         else:
@@ -82,16 +128,25 @@ class ActorNetwork:
         return Model(self.base_input, out)
 
     def fit(self, states, action_gradients):
+        """Fit network based on state input and action gradients fed from critic."""
         self.session.run(self.optimize, feed_dict={
                 self.model.input: states,
                 self.action_grad_input: action_gradients})
 
     def target_fit(self):
+        """Update target network towards main network according to `tau`."""
         W = [self.tau*aw + (1-self.tau)*tw
              for aw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
         self.target_model.set_weights(W)
 
     def _predict(self, model, state, single):
+        """General function to predict policy for state with a given model.
+
+        Parameters:
+            model (keras.Model): either `self.model` or `self.target_model`.
+            state (np.array): state input to predict; could be single observation or batch.
+            single (bool): flag to indicate whether state input is single observation or batch.
+        """
         if single:
             state = np.expand_dims(state, 0)
             pred = model.predict(state)[0]
@@ -104,13 +159,25 @@ class ActorNetwork:
         return pred
 
     def predict(self, state, single=True):
+        """Apply `_predict` with `self.model`."""
         return self._predict(self.model, state, single)
 
     def target_predict(self, state, single=True):
+        """Apply `_predict` with `self.target_model`."""
         return self._predict(self.target_model, state, single)
 
 
 class CriticNetwork:
+    """Critic component of DDPG model; the network that predicts a state-action value.
+
+    Parameters:
+        model (DDPGModel): instance of DDPGModel that Critic is associated with.
+        session (tf.Session): tensorflow session that the models live in.
+        base_input (keras.Layer): state input layer for both networks.
+        base_output (keras.Layer): state-transforming intermediate output layer.
+        tau (float): mixing rate for target network update; how fast it follows main network.
+        optimizer (keras.Optimizer): full optimizer object.
+    """
     def __init__(self, model, session, base_input, base_output, tau, optimizer):
         self.model = model
         self.session = session
@@ -125,6 +192,7 @@ class CriticNetwork:
         self.session.run(tf.global_variables_initializer())
 
     def _create_model(self):
+        """Extend `base_topology` to produce an action-value output (action as input)."""
         if self.base_output.shape.ndims > 2:
             base_out = Flatten()(self.base_output)
         else:
@@ -139,14 +207,24 @@ class CriticNetwork:
         return model
 
     def fit(self, states, actions, targets):
+        """Fit network based on state input, action from actor, targets from target critic."""
         self.model.train_on_batch([states, actions], targets)
 
     def target_fit(self):
+        """Update target network towards main network according to `tau`."""
         W = [self.tau*cw + (1-self.tau)*tw
              for cw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
         self.target_model.set_weights(W)
 
     def _predict(self, model, state, action, single):
+        """General function to predict value for state and action with given model.
+
+        Parameters:
+            model (keras.Model): either `self.model` or `self.target_model`.
+            state (np.array): state input to predict for; could be single observation or batch.
+            action (np.array): action input to predict for; could be single observation or batch.
+            single (bool): flag to indicate whether state/action input is single observation or batch.
+        """
         if single:
             inputs = [np.expand_dims(state, 0), np.expand_dims(action, 0)]
             return model.predict(inputs)[0]
@@ -155,12 +233,15 @@ class CriticNetwork:
             return model.predict(inputs)
 
     def predict(self, state, action, single=True):
+        """Apply `_predict` with `self.model`."""
         return self._predict(self.model, state, single)
 
     def target_predict(self, state, action, single=True):
+        """Apply `_predict` with `self.target_model`."""
         return self._predict(self.target_model, state, action, single)
 
     def gradients(self, states, actions):
+        """Get gradient of model with respect to actions, to be passed to actor."""
         return self.session.run(self.action_grads, feed_dict={
                     self.model.input[0]: states,
                     self.model.input[1]: actions})[0]

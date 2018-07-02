@@ -9,6 +9,50 @@ from .. import util
 
 
 class Agent:
+    """Composes an environment, data pipeline, model, and actor to perform reinforcement learning.
+
+    The modular philosophy of the library means that this agent should be
+    responsible for no more than calling its members to run timesteps,
+    and to loop over timesteps to run episodes. The setup is:
+        The environment provides a state,
+        it's passed through the pipeline,
+        the model makes a prediction for that state,
+        the actor converts that prediction to an action,
+        the environment consumes that action,
+        the monitor keeps track of the important things,
+        and sometimes the model learns from the replay buffer.
+
+    Parameters:
+        env (gym.Env): the environment the agent is acting in.
+        state_pipeline (list[functions]): a list of functions that the state
+                                          is passed through sequentially.
+        model (kerasgym.Model): a reinforcement learning model that guides the agent.
+                                options: DQNModel, DDPGModel.
+        actor (kerasgym.Actor): responsible for converting model predictions to actions.
+        buffer_size (int): limit for how many observations to hold in replay buffer.
+        batch_size (int): number of observations to pull from replay_buffer at fit time.
+        warmup_length (int): number of random timesteps to execute before beginning
+                             to learn and apply the model. Replay buffer will be populated.
+        repeated_actions (int): number of env timesteps to repeat a chosen action for.
+        report_freq (int): interval for printing to stdout, in number of episodes.
+        state_dtype (type): numpy datatype for states to be stored in in replay buffer.
+
+    Member variables:
+        env (gym.Env): the environment the agent is acting in.
+        env_state (np.array): current state of environment.
+        state_pipeline (list[functions]): a list of functions that the state
+                                          is passed through sequentially.
+        model (kerasgym.Model): a reinforcement learning model that guides the agent.
+                                options: DQNModel, DDPGModel.
+        actor (kerasgym.Actor): responsible for converting model predictions to actions.
+        replay_buffer (kerasgym.ReplayBuffer): collection of historical observations.
+        batch_size (int): number of observations to pull from replay_buffer at fit time.
+        warmup_length (int): number of random timesteps to execute before beginning
+                             to learn and apply the model. Replay buffer will be populated.
+        repeated_actions (int): number of env timesteps to repeat a chosen action for.
+        monitor (kerasgym.Monitor): keeps track of metrics and logs them.
+        renders_by_episode (list[np.array]): environment timestep renderings by episode.
+    """
     # incompatible pairs of action space type and model type
     incompatibles = [('box', 'dqnmodel'), ('discrete', 'ddpgmodel'),
                      ('multidiscrete', 'ddpgmodel'), ('multibinary', 'ddpgmodel')]
@@ -43,6 +87,7 @@ class Agent:
         self._warmup()
 
     def render_gif(self, episode=0):
+        """Generates gif of agent's timesteps for given episode index."""
         frames = self.renders_by_episode[episode]
         plt.figure(figsize=(frames[0].shape[1] / 72.0,
                             frames[0].shape[0] / 72.0), dpi=72)
@@ -57,21 +102,33 @@ class Agent:
         ipy_display(js_display.display_animation(anim, default_mode='loop'))
 
     def reset(self):
+        """Resets environment to initial state for new episode."""
         self.env_state = self.env.reset()
 
     def _transform_state(self, state):
+        """Apply `state_pipeline` to given state."""
         out = state.copy()
         for transformation in self.state_pipeline:
             out = transformation(out, self.env)
         return out
 
     def _warmup(self):
+        """Run replay buffer-populating timesteps before actually starting."""
         for i in range(self.warmup_length):
             reward, done = self.run_timestep(warming=True)
             if done:
                 self.reset()
 
     def run_timestep(self, warming=False, render=False):
+        """Run one timestep in the environment.
+
+        - Process current state with `state_pipeline`.
+        - Generate prediction from `model`.
+        - Convert prediction to action twice; one format for replay buffer, one for environment.
+        - Apply action in environment, observe reward and next state.
+        - Store experience in replay buffer.
+        - Every `batch_size` timesteps, fit model to random batch from replay buffer.
+        """
         start_state = self._transform_state(self.env_state)
         if warming:
             action_for_model, action_for_env = self.actor.warming_action()
@@ -106,6 +163,7 @@ class Agent:
         return reward, done
 
     def run_episode(self, render=False, log=True):
+        """Apply `run_timestep` until episode terminates. Apply monitor for logging."""
         self.renders_by_episode.append([])
         total_reward = 0.
         while True:
@@ -120,6 +178,7 @@ class Agent:
             self.monitor.log_to_stdout()
 
     def run_indefinitely(self, render=False, log=True):
+        """Apply run_episode continuously until keep_running.txt is populated with 'False'."""
         while True:
             self.run_episode(render=render, log=log)
             with open('/home/kerasgym/agents/keep_running.txt') as f:

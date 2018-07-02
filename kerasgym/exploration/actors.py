@@ -3,7 +3,9 @@ from ..util import get_action_type, ActionModelMismatchError
 
 
 class Actor:
+    """Component responsible both for exploration and converting model predictions to actions."""
     def __init__(self):
+        # a dictionary of functions makes choosing the method of conversion easier
         self.explore_and_convert_fns = {
             'discrete': {'policy': self._discrete_policy,
                          'value': self._discrete_value},
@@ -14,14 +16,17 @@ class Actor:
                             'value': self._multibinary_value}}
 
     def configure(self, agent):
+        """Associate actor with agent, picking up information about its action space and model."""
         self.action_space = agent.env.action_space
         self.action_type = get_action_type(self.action_space)
         self.prediction_type = agent.model.prediction_type
 
     def convert_pred(self, pred):
+        """Look up explore_and_convert function and apply it to model prediction."""
         return self.explore_and_convert_fns[self.action_type][self.prediction_type](pred)
 
     def warming_action(self):
+        """Choose a random action without involving the model."""
         a_for_env = self.action_space.sample()
         if self.prediction_type == 'discrete':
             a_for_model = np.eye(self.action_space.n)[a_for_env]
@@ -35,6 +40,39 @@ class Actor:
         return a_for_model, a_for_env
 
     def step(self):
+        """Move one timestep ahead. Main purpose is to advance value schedules."""
+        pass
+
+    def _discrete_policy(self, pred):
+        """Exploration and conversion function for a Discrete action space + Policy model."""
+        pass
+
+    def _discrete_value(self, pred):
+        """Exploration and conversion function for a Discrete action space + Value model."""
+        pass
+
+    def _multidiscrete_policy(self, pred):
+        """Exploration and conversion function for a Multi-Discrete action space + Policy model."""
+        pass
+
+    def _multidiscrete_value(self, pred):
+        """Exploration and conversion function for a Multi-Discrete action space + Value model."""
+        pass
+
+    def _box_policy(self, pred):
+        """Exploration and conversion function for a Box action space + Policy model."""
+        pass
+
+    def _box_value(self, pred):
+        """Exploration and conversion function for a Box action space + Value model."""
+        pass
+
+    def _multibinary_policy(self, pred):
+        """Exploration and conversion function for a Multi-Binary action space + Policy model."""
+        pass
+
+    def _multibinary_value(self, pred):
+        """Exploration and conversion function for a Multi-Binary action space + Value model."""
         pass
 
 
