@@ -9,11 +9,6 @@ cd docker/
 
 read -p "Build GPU-enabled image? [Y/n] " gpu
 
-if [ ! -f jupyter_notebook_config.json ]
-then
-    python create_jupyter_password.py
-fi
-
 if [[ $gpu =~ ^[Yy]$ ]]
 then
     compute_device=gpu
@@ -22,3 +17,8 @@ else
 fi
 
 docker build  -t gym-$compute_device --build-arg baseimage=ntaylor22/tensorflow-$compute_device .
+
+if [ ! -f jupyter_notebook_config.json ]
+then
+    python create_jupyter_password.py
+fi
