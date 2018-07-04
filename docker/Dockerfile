@@ -14,5 +14,5 @@ COPY requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
 CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root
-RUN echo '#!/bin/bash\necho False > /home/kerasgym/agents/keep_running.txt' \
+RUN echo '#!/bin/bash\necho False > /home/pavlov/agents/keep_running.txt' \
     > /usr/bin/pause && chmod +x /usr/bin/pause

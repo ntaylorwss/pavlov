@@ -117,7 +117,7 @@ def graph_schedule(schedule, n_vals):
     """Create matplot graph of schedule values over a given number of timesteps.
     
     Parameters:
-        schedule (kerasgym.Schedule): the schedule to be examined.
+        schedule (pavlov.Schedule): the schedule to be examined.
         n_vals (int): number of values to visualize; the domain of the graph is [0, n_vals).
     """
     this_schedule = copy(schedule)

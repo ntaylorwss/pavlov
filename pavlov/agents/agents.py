@@ -28,9 +28,9 @@ class Agent:
         env (gym.Env): the environment the agent is acting in.
         state_pipeline (list[functions]): a list of functions that the state
                                           is passed through sequentially.
-        model (kerasgym.Model): a reinforcement learning model that guides the agent.
+        model (pavlov.Model): a reinforcement learning model that guides the agent.
                                 options: DQNModel, DDPGModel.
-        actor (kerasgym.Actor): responsible for converting model predictions to actions.
+        actor (pavlov.Actor): responsible for converting model predictions to actions.
         buffer_size (int): limit for how many observations to hold in replay buffer.
         batch_size (int): number of observations to pull from replay_buffer at fit time.
         warmup_length (int): number of random timesteps to execute before beginning
@@ -44,15 +44,15 @@ class Agent:
         env_state (np.array): current state of environment.
         state_pipeline (list[functions]): a list of functions that the state
                                           is passed through sequentially.
-        model (kerasgym.Model): a reinforcement learning model that guides the agent.
+        model (pavlov.Model): a reinforcement learning model that guides the agent.
                                 options: DQNModel, DDPGModel.
-        actor (kerasgym.Actor): responsible for converting model predictions to actions.
-        replay_buffer (kerasgym.ReplayBuffer): collection of historical observations.
+        actor (pavlov.Actor): responsible for converting model predictions to actions.
+        replay_buffer (pavlov.ReplayBuffer): collection of historical observations.
         batch_size (int): number of observations to pull from replay_buffer at fit time.
         warmup_length (int): number of random timesteps to execute before beginning
                              to learn and apply the model. Replay buffer will be populated.
         repeated_actions (int): number of env timesteps to repeat a chosen action for.
-        monitor (kerasgym.Monitor): keeps track of metrics and logs them.
+        monitor (pavlov.Monitor): keeps track of metrics and logs them.
         renders_by_episode (list[np.array]): environment timestep renderings by episode.
     """
     # incompatible pairs of action space type and model type
@@ -90,7 +90,7 @@ class Agent:
         self._warmup_replay_buffer()
 
     def _empty_running_file(self):
-        with open('/home/kerasgym/agents/keep_running.txt', 'w'):
+        with open('/home/pavlov/agents/keep_running.txt', 'w'):
             pass
 
     def _warmup_replay_buffer(self):
@@ -181,7 +181,7 @@ class Agent:
         """Apply run_episode continuously until keep_running.txt is populated with 'False'."""
         while True:
             self.run_episode(render=render, log=log)
-            with open('/home/kerasgym/agents/keep_running.txt') as f:
+            with open('/home/pavlov/agents/keep_running.txt') as f:
                 contents = f.read().strip()
                 if contents == 'False':
                     print("Stopping.")

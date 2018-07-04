@@ -1,25 +1,25 @@
-# KerasGym: A Modular, Composable Approach to Reinforcement Learning
+# Pavlov: A Modular, Composable Approach to Reinforcement Learning
 
-KerasGym is an approach to reinforcement learning focused on a modular design. This design allows the building of reinforcement learning agents by selecting from among a set of options for each of the following components:
+Pavlov is an approach to reinforcement learning focused on a modular design. This design allows the building of reinforcement learning agents by selecting from among a set of options for each of the following components:
 
 - *Environment*. Any environment that complies with the OpenAI Gym interface can be used. Note that environments that do not comply with this interface cannot be used. For an example of how to register your custom environment as a Gym environment, see [Custom Environments](#custom-environments).
-- *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in KerasGym is defined as a list of functions. There is a collection of common functions in the module `kerasgym.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#state-pipeline) for details.
+- *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in Pavlov is defined as a list of functions. There is a collection of common functions in the module `pavlov.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#state-pipeline) for details.
 - *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#models).
 - *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#exploration).
 
 ## Installation
 
 ## Getting Started
-Here's an example of an end-to-end usage of KerasGym to produce an agent for Breakout and have it run forever. Note that this agent doesn't actually solve Breakout with these settings, but once I figure out what settings solve it I will update the example.
+Here's an example of an end-to-end usage of Pavlov to produce an agent for Breakout and have it run forever. Note that this agent doesn't actually solve Breakout with these settings, but once I figure out what settings solve it I will update the example.
 
 ```python
 import gym
 from keras import optimizers
 
-from kerasgym import pipeline
-from kerasgym import models
-from kerasgym import exploration
-from kerasgym import agents
+from pavlov import pipeline
+from pavlov import models
+from pavlov import exploration
+from pavlov import agents
 
 env = gym.make('Breakout-v0')
 
@@ -57,10 +57,10 @@ agent.run_indefinitely()
 
 ## Environments
 ### Gym Environments
-KerasGym is equipped to function with any environment that follows the [OpenAI Gym API](https://github.com/openai/gym/blob/master/gym/core.py#L11). For environments that are native to Gym, usage is straightforward. Simply use `gym.make` to generate an environment, and pass it to the Agent, as shown in [Getting Started](#getting-started).
+Pavlov is equipped to function with any environment that follows the [OpenAI Gym API](https://github.com/openai/gym/blob/master/gym/core.py#L11). For environments that are native to Gym, usage is straightforward. Simply use `gym.make` to generate an environment, and pass it to the Agent, as shown in [Getting Started](#getting-started).
 
 ### Custom Environments
-A custom environment can surely be used with KerasGym, as long as it is first made to comply with the Gym API, and is properly registered as a Gym environment. What follows is all that is necessary to create a custom environment that complies with the OpenAI Gym API.
+A custom environment can surely be used with Pavlov, as long as it is first made to comply with the Gym API, and is properly registered as a Gym environment. What follows is all that is necessary to create a custom environment that complies with the OpenAI Gym API.
 
 A valid custom environment class must be necessarily equipped with the following _member variables_:
 
@@ -92,7 +92,7 @@ def register_custom_env(env_init_arg_1, env_init_arg_n, env_name='MyCustomEnviro
 Note that an environment can only be registered once per Python session.
 
 ### Spaces
-Currently, Gym supports 4 types spaces for both observations and actions, found in the module `gym.spaces`: they are `Box`, `Discrete`, `MultiDiscrete`, and `MultiBinary`. All of these spaces are supported by KerasGym; though for Box, actions can only be up to 2D, while for observations, they can be any n-dimensional shape.
+Currently, Gym supports 4 types spaces for both observations and actions, found in the module `gym.spaces`: they are `Box`, `Discrete`, `MultiDiscrete`, and `MultiBinary`. All of these spaces are supported by Pavlov; though for Box, actions can only be up to 2D, while for observations, they can be any n-dimensional shape.
 
 Keep in mind when writing your environment that the output of any Space, including both the observation space and action space, must be the same at every timestep.
 
@@ -100,7 +100,7 @@ Keep in mind when writing your environment that the output of any Space, includi
 Often, a raw state is not going to be appropriate for effective learning, and transformations are required. The fundamental philosophy of this library is that data processing and feature engineering follows a "pipeline" structure. This means that a series of transformations are applied sequentially to each input state, to produce the final state formatting. These transformations should be implemented as individual functions. At that point, a list of these functions can be passed to the Agent. An example of a pipeline would be:
 
 ```python
-from kerasgym import pipeline
+from pavlov import pipeline
 pipeline = [pipeline.rgb_to_grey(method='luminosity'), # convert 3D RGB to 2D greyscale
             pipeline.downsample(new_shape=(84, 84)), # resize image to smaller size by interpolation
             pipeline.combine_consecutive(n_states=2, fun='max'), # each state is the max of current and previous states
@@ -125,7 +125,7 @@ def reshape_array(new_shape):
 The convention to start the inner function with an underscore and name it identically to the outer function is just personal preference.
 
 ## Models
-At the moment, there are 2 reinforcement learning algorithms provided by KerasGym:
+At the moment, there are 2 reinforcement learning algorithms provided by Pavlov:
 
 - Deep Q Network (DQN)
     - Double DQN is implemented, which is to say there is a target network; setting the parameter `tau` to `1.0` will effectively negate the target network and make it plain DQN
@@ -133,13 +133,13 @@ At the moment, there are 2 reinforcement learning algorithms provided by KerasGy
 
 The parameters for each model are specified in the documentation and docstrings.
 
-One core concept of KerasGym is that the feature extraction component of a neural network should be separated from the action selection component; for this reason, all classes for RL algorithms will expect to be given a headless Keras computation graph, or `kerasgym.models.Topology`, as input.
+One core concept of Pavlov is that the feature extraction component of a neural network should be separated from the action selection component; for this reason, all classes for RL algorithms will expect to be given a headless Keras computation graph, or `pavlov.models.Topology`, as input.
 
 ### Custom Model Configuration
 To write an entirely customized Keras model graph, do the following:
 
-1. Start your new model class (let's call it `MyModel`), and have it inherit the `kerasgym.models.topology.Topology` base class:
-    - e.g. `class MyModel(kerasgym.models.topology.Topology):`
+1. Start your new model class (let's call it `MyModel`), and have it inherit the `pavlov.models.topology.Topology` base class:
+    - e.g. `class MyModel(pavlov.models.topology.Topology):`
 2. Override the method `define_graph(self, ...)`, filling in `...` with whatever parameters your configuration requires, e.g. `dense_layer_sizes`. Alternatively, you can have no parameters:
     - e.g. `def define_graph(self, dense_layer_sizes, activation, weight_initializer):`
 3. Initialize a new instance of your model class by passing your arguments for the parameters you provided in the declaration of `define_graph`:
@@ -160,7 +160,7 @@ class MyCustomModel(Topology):
 This way you do not have to care about making shapes agree whatsoever.
 
 ## Exploration
-At the moment, there is 1 method of exploration provided by KerasGym:
+At the moment, there is 1 method of exploration provided by Pavlov:
 
 - Epsilon Greedy
 

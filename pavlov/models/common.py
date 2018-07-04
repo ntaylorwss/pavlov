@@ -13,10 +13,10 @@ class BaseModel:
     defined here as well.
 
     Common parameters:
-        topology (kerasgym.Topology): feature-extracting Keras model graph object
+        topology (pavlov.Topology): feature-extracting Keras model graph object
                                       defining the body of the model.
     Common member variables:
-        topology (kerasgym.Topology): feature-extracting Keras model graph object
+        topology (pavlov.Topology): feature-extracting Keras model graph object
                                       defining the body of the model.
         prediction_type (str): indicating whether it's a policy-based or value-based model.
                                defined by child class;

@@ -34,8 +34,8 @@ class DDPGModel(BaseModel):
         critic_optimizer (keras.Optimizer): full optimizer object for critic network.
         action_space (gym.spaces.*): whole action space object from environment.
         action_type (str): class name of action space.
-        actor (kerasgym.ActorNetwork): actor network. I/O: state -> policy vector.
-        critic (kerasgym.CriticNetwork): critic network. I/O: [state, action] -> value scalar.
+        actor (pavlov.ActorNetwork): actor network. I/O: state -> policy vector.
+        critic (pavlov.CriticNetwork): critic network. I/O: [state, action] -> value scalar.
     """
 
     def __init__(self, topology, activation, gamma, tau,

@@ -1,4 +1,7 @@
 notebooks/.ipynb_checkpoints/
 __pycache__/
-kerasgym/agents/keep_running.txt
+pavlov/agents/keep_running.txt
 docker/jupyter_notebook_config.json
+Pavlov.egg-info/
+dist/
+build/

@@ -30,7 +30,7 @@ class ReplayBuffer:
         """Setup buffer, using shape information from action space and state pipeline.
 
         Parameters:
-            agent (kerasgym.Agent): the Agent object that the replay buffer is associated with.
+            agent (pavlov.Agent): the Agent object that the replay buffer is associated with.
         """
         self.state_shape = agent.state_pipeline.out_dims
         self.action_space = agent.env.action_space

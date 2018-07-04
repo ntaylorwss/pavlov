@@ -10,13 +10,13 @@ class Monitor:
     Writes logs for tensorboard to use for visualization of these metrics.
 
     Parameters:
-        agent (kerasgym.Agent): the agent the metrics are tracking.
+        agent (pavlov.Agent): the agent the metrics are tracking.
         save_path (str): file path for tensorboard logs.
                          default: /var/log/.
         report_freq (int): interval for printing to stdout, in number of episodes.
 
     Member variables:
-        agent (kerasgym.Agent): the agent the metrics are tracking.
+        agent (pavlov.Agent): the agent the metrics are tracking.
         save_path (str): file path for tensorboard logs
         report_freq (int): interval for printing to stdout, in number of episodes.
         rewards (collections.deque): holds last `report_freq` episodes' reward totals.
