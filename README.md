@@ -2,17 +2,17 @@
 
 KerasGym is an approach to reinforcement learning focused on a modular design. This design allows the building of reinforcement learning agents by selecting from among a set of options for each of the following components:
 
-    - *Environment*. Any environment that complies with the OpenAI Gym interface can be used. Note that environments that do not comply with this interface cannot be used. For an example of how to register your custom environment as a Gym environment, see [Custom Environments](#Custom-Environments).
-    - *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in KerasGym is defined as a list of functions. There is a collection of common functions in the module `kerasgym.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#State-Pipeline) for details.
-    - *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#Models).
-    - *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#Exploration).
+- *Environment*. Any environment that complies with the OpenAI Gym interface can be used. Note that environments that do not comply with this interface cannot be used. For an example of how to register your custom environment as a Gym environment, see [Custom Environments](#Custom-Environments).
+- *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in KerasGym is defined as a list of functions. There is a collection of common functions in the module `kerasgym.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#State-Pipeline) for details.
+- *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#Models).
+- *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#Exploration).
 
 ## Installation
 
 ## Getting Started
 Here's an example of an end-to-end usage of KerasGym to produce an agent for Breakout and have it run forever. Note that this agent doesn't actually solve Breakout with these settings, but once I figure out what settings solve it I will update the example.
 
-```
+```python
 import gym
 from keras import optimizers
 
@@ -78,7 +78,7 @@ See Gym documentation for more details on what these methods are for and what th
 
 From there, here is a snippet of slightly abstracted code (in the sense of the variable names being abstracted) for registering this environment with Gym:
 
-```
+```python
 from gym.envs.registration import register
 from mymodule.mysubmodule import MyCustomEnvironment
 
@@ -99,7 +99,7 @@ Keep in mind when writing your environment that the output of any Space, includi
 ## State Pipeline
 Often, a raw state is not going to be appropriate for effective learning, and transformations are required. The fundamental philosophy of this library is that data processing and feature engineering follows a "pipeline" structure. This means that a series of transformations are applied sequentially to each input state, to produce the final state formatting. These transformations should be implemented as individual functions. At that point, a list of these functions can be passed to the Agent. An example of a pipeline would be:
 
-```
+```python
 from kerasgym import pipeline
 pipeline = [pipeline.rgb_to_grey(method='luminosity'), # convert 3D RGB to 2D greyscale
             pipeline.downsample(new_shape=(84, 84)), # resize image to smaller size by interpolation
@@ -115,7 +115,7 @@ Note that the pipeline functions, such as `pipeline.rgb_to_grey()`, themselves r
 ### Custom Functions
 The only requirement for a pipeline function is that its signature takes `state` and `env` as arguments. Many pipeline functions will not make use of `env` information, but some will, so it's a necessary consistency. The recommendation is also to write pipeline functions as functors; that is, functions that return functions. As mentioned above, this allows easy specification and tuning of pipeline functions, and a readable syntax. Here's an example:
 
-```
+```python
 def reshape_array(new_shape):
     def _reshape_array(state, env):
         return np.reshape(state, new_shape)
@@ -150,7 +150,7 @@ With this design, you can create any Keras graph you want, and parameterize it h
 ### Input Layer
 A key note about this design is that the Input layer of the model is taken care of by the Agent internally. This layer will have the correct shape according to the output of your state pipeline, and it can be accessed through `self.input` in your child class of `Topology`. As an abbreviated example:
 
-```
+```python
 class MyCustomModel(Topology):
     def define_graph(self, layer1_size, ...):
         X = Dense(layer1_size)(self.input) # accessing the Input layer through self.input
