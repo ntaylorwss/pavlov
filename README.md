@@ -2,10 +2,10 @@
 
 KerasGym is an approach to reinforcement learning focused on a modular design. This design allows the building of reinforcement learning agents by selecting from among a set of options for each of the following components:
 
-- *Environment*. Any environment that complies with the OpenAI Gym interface can be used. Note that environments that do not comply with this interface cannot be used. For an example of how to register your custom environment as a Gym environment, see [Custom Environments](#Custom-Environments).
-- *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in KerasGym is defined as a list of functions. There is a collection of common functions in the module `kerasgym.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#State-Pipeline) for details.
-- *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#Models).
-- *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#Exploration).
+- *Environment*. Any environment that complies with the OpenAI Gym interface can be used. Note that environments that do not comply with this interface cannot be used. For an example of how to register your custom environment as a Gym environment, see [Custom Environments](#custom-environments).
+- *State pipeline*. A pipeline is a sequence of pure functions that transform their input in some way. A state pipeline in KerasGym is defined as a list of functions. There is a collection of common functions in the module `kerasgym.pipeline`, but you can easily write your own function and place it in the list. See [State Pipeline](#state-pipeline) for details.
+- *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#models).
+- *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#exploration).
 
 ## Installation
 
@@ -57,15 +57,15 @@ agent.run_indefinitely()
 
 ## Environments
 ### Gym Environments
-KerasGym is equipped to function with any environment that follows the [OpenAI Gym API](https://github.com/openai/gym/blob/master/gym/core.py#L11). For environments that are native to Gym, usage is straightforward. Simply use `gym.make` to generate an environment, and pass it to the Agent, as shown in [Getting Started](#Getting-Started).
+KerasGym is equipped to function with any environment that follows the [OpenAI Gym API](https://github.com/openai/gym/blob/master/gym/core.py#L11). For environments that are native to Gym, usage is straightforward. Simply use `gym.make` to generate an environment, and pass it to the Agent, as shown in [Getting Started](#getting-started).
 
 ### Custom Environments
 A custom environment can surely be used with KerasGym, as long as it is first made to comply with the Gym API, and is properly registered as a Gym environment. What follows is all that is necessary to create a custom environment that complies with the OpenAI Gym API.
 
 A valid custom environment class must be necessarily equipped with the following _member variables_:
 
-- `self.observation_space`: An instance of a class from the `gym.spaces` module. Details are below under [Spaces](#Spaces).
-- `self.action_space`: An instance of a class from the `gym.spaces` module. Details are below under [Spaces](#Spaces).
+- `self.observation_space`: An instance of a class from the `gym.spaces` module. Details are below under [Spaces](#spaces).
+- `self.action_space`: An instance of a class from the `gym.spaces` module. Details are below under [Spaces](#spaces).
 
 And it must be necessarily equipped with the following _methods_:
 
