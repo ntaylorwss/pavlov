@@ -10,8 +10,6 @@ class ReplayBuffer:
 
     Parameters:
         buffer_size (int): limit for how many observations to hold in total.
-        state_dims (tuple(int)): shape, not including observation dim, of environment state.
-        action_space (gym.spaces.*): whole action space object from environment.
         state_dtype (type): numpy datatype for states to be stored in.
                             default: np.float32.
 
@@ -19,29 +17,30 @@ class ReplayBuffer:
         buffer_size (int): limit for how many observations are held in total.
         current_idx (int): current position in `buffer`; circular.
         current_size (int): number of items in `buffer`; caps at `buffer_size`.
-        action_space (gym.spaces.*): whole action space object from environment.
-        action_type (str): class name of action space.
         state_dtype (type): numpy datatype for states to be stored in.
         buffer (dict): all observations as dictionary of arrays.
     """
-    def __init__(self, buffer_size, state_dims, action_space, state_dtype=np.float32):
+    def __init__(self, buffer_size, state_dtype):
         self.buffer_size = buffer_size
         self.current_idx = 0
         self.current_size = 0
-        self.action_space = action_space
-        self.action_type = action_space.__class__.__name__.lower()
         self.state_dtype = state_dtype
-        self.buffer = self._initialize_buffer(state_dims)
 
-    def _initialize_buffer(self, state_dims):
-        """Init helper to create self.buffer.
+    def configure(self, agent):
+        """Setup buffer, using shape information from action space and state pipeline.
 
         Parameters:
-            state_dims (tuple(int)): shape, not including observation dim, of environment state.
+            agent (kerasgym.Agent): the Agent object that the replay buffer is associated with.
         """
+        self.state_shape = agent.state_pipeline.out_dims
+        self.action_space = agent.env.action_space
+        self.action_type = self.action_space.__class__.__name__.lower()
+
         buffer = {}
-        buffer['states'] = np.zeros([self.buffer_size] + state_dims, dtype=self.state_dtype)
-        buffer['next_states'] = np.zeros([self.buffer_size] + state_dims, dtype=self.state_dtype)
+        buffer['states'] = np.zeros([self.buffer_size] + self.state_shape,
+                                    dtype=self.state_dtype)
+        buffer['next_states'] = np.zeros([self.buffer_size] + self.state_shape,
+                                         dtype=self.state_dtype)
         buffer['rewards'] = np.zeros(self.buffer_size)
         buffer['dones'] = np.zeros(self.buffer_size)
         if self.action_type == 'discrete':
@@ -52,7 +51,7 @@ class ReplayBuffer:
             buffer['actions'] = np.zeros((self.buffer_size, self.action_space.shape))
         elif self.action_type == 'multibinary':
             buffer['actions'] = [np.zeros((self.buffer_size, 2)) for _ in range(self.action_space.n)]
-        return buffer
+        self.buffer = buffer
 
     def get_batch(self, batch_size):
         """Return random sample of observations from buffer for all keys, as dictionary.
@@ -90,3 +89,6 @@ class ReplayBuffer:
         if self.current_size < self.buffer_size:
             self.current_size += 1
         self.current_idx = (self.current_idx + 1) % self.buffer_size
+
+    def __getitem__(self, key):
+        return self.buffer[key]

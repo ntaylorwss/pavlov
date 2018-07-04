@@ -1,5 +1,5 @@
 import numpy as np
-from ..util import get_action_type, ActionModelMismatchError
+from ..util import ActionModelMismatchError
 
 
 class Actor:
@@ -18,7 +18,7 @@ class Actor:
     def configure(self, agent):
         """Associate actor with agent, picking up information about its action space and model."""
         self.action_space = agent.env.action_space
-        self.action_type = get_action_type(self.action_space)
+        self.action_type = self.action_space.__class__.__name__.lower()
         self.prediction_type = agent.model.prediction_type
 
     def convert_pred(self, pred):
@@ -28,14 +28,14 @@ class Actor:
     def warming_action(self):
         """Choose a random action without involving the model."""
         a_for_env = self.action_space.sample()
-        if self.prediction_type == 'discrete':
+        if self.action_type == 'discrete':
             a_for_model = np.eye(self.action_space.n)[a_for_env]
-        elif self.prediction_type == 'multidiscrete':
+        elif self.action_type == 'multidiscrete':
             a_for_model = [np.eye(n)[a_for_env[i]]
                            for i, n in enumerate(self.action_space.nvec)]
-        elif self.prediction_type == 'box':
+        elif self.action_type == 'box':
             a_for_model = a_for_env
-        elif self.prediction_type == 'multibinary':
+        elif self.action_type == 'multibinary':
             a_for_model = [np.eye(2)[env_a] for env_a in a_for_env]
         return a_for_model, a_for_env
 

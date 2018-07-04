@@ -1,4 +1,4 @@
-import collections.deque
+import collections
 import numpy as np
 import tensorflow as tf
 
@@ -27,15 +27,12 @@ class Monitor:
         summary_op (tf object): tensorflow op for summaries.
         summary_writer (tf object): tensorflow op for summaries.
     """
-    def __init__(self, agent, save_path='/var/log/', report_freq=10):
-        self.agent = agent
+    def __init__(self, report_freq, save_path):
         self.save_path = save_path
         self.report_freq = report_freq
         self.rewards = collections.deque([0], maxlen=report_freq)
         self.durations = collections.deque([0], maxlen=report_freq)
         self.episode = 0
-        self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
-        self.summary_writer = tf.summary.FileWriter(self.save_path, self.agent.model.session.graph)
 
     def _setup_summary(self):
         """Configure internal tensorflow ops for summary metrics."""
@@ -49,6 +46,11 @@ class Monitor:
                       for i in range(len(summary_vars))]
         summary_op = tf.summary.merge_all()
         return summary_placeholders, update_ops, summary_op
+
+    def configure(self, agent):
+        self.agent = agent
+        self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
+        self.summary_writer = tf.summary.FileWriter(self.save_path, agent.model.session.graph)
 
     def get_metrics(self):
         """Return averages over `report_freq` window of the two metrics as tuple."""
