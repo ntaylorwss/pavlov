@@ -51,9 +51,9 @@ Running a Docker container often requires setting a few flags. In this case, the
 - Optional: `-v $PWD:/home`: mounting your working directory to /home, which is the working directory of the container.
 - Optional: `--name [container_name]`: setting the name of the container you're going to run.
 
-So a standard command to launch a Pavlov container from a Unix system would be:
+So a standard command to launch a Pavlov container from a Unix system would be (assuming the GPU version of the image):
 
-`docker run --name pavlov -d --rm -p 8888:8888 -p 6006:6006 -v $PWD:/home pavlov`
+`docker run --name pavlov -d --rm -p 8888:8888 -p 6006:6006 -v $PWD:/home ntaylor22/pavlov-gpu`
 
 ## Getting Started
 ### Making an agent
