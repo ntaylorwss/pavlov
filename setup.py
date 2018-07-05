@@ -14,8 +14,11 @@ Use Pavlov if you want a reinforcement learning library that:
 Pavlov is distributed under the MIT license.
 '''
 
+with open('VERSION') as f:
+    version = f.read().strip()
+
 setup(name='Pavlov',
-      version='0.1.2',
+      version=version,
       description='A modular reinforcement learning pipeline with Keras',
       long_description=long_description,
       author='Nash Taylor',
