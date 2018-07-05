@@ -1,4 +1,4 @@
-pavlov==0.1.2
+pavlov
 matplotlib==2.2.2
 pandas==0.23.0
 scikit-image==0.14.0
