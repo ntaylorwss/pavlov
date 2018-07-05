@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y zlib1g-dev libjpeg-dev xvfb \
 
 RUN pip install 'gym[all]'
 
-COPY requirements.txt /tmp
+ARG reqfile
+COPY $reqfile /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root

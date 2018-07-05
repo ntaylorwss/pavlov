@@ -7,15 +7,18 @@ then
 fi
 cd docker/
 
-read -p "Build GPU-enabled image? [Y/n] " gpu
-
-if [[ $gpu =~ ^[Yy]$ ]]
-then
-    compute_device=gpu
-else
-    compute_device=cpu
-fi
-
 version=$(<../VERSION)
 
-docker build  -t ntaylor22/pavlov-$compute_device:$version --build-arg baseimage=ntaylor22/tensorflow-$compute_device .
+docker build  -t ntaylor22/pavlov-cpu:$version -t ntaylor22/pavlov-cpu:latest \
+    --build-arg baseimage=ntaylor22/tensorflow-cpu \
+    --build-arg reqfile=requirements.txt . &
+docker build  -t ntaylor22/pavlov-cpu:latest-dev \
+    --build-arg baseimage=ntaylor22/tensorflow-cpu \
+    --build-arg reqfile=requirements-dev.txt . &
+docker build  -t ntaylor22/pavlov-gpu:$version -t ntaylor22/pavlov-gpu:latest \
+    --build-arg baseimage=ntaylor22/tensorflow-gpu \
+    --build-arg reqfile=requirements.txt . &
+docker build -t ntaylor22/pavlov-gpu:latest-dev \
+    --build-arg baseimage=ntaylor22/tensorflow-gpu \
+    --build-arg reqfile=requirements-dev.txt . &
+wait
