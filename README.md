@@ -198,7 +198,7 @@ With this design, you can create any Keras graph you want, and parameterize it h
 A key note about this design is that the Input layer of the model is taken care of by the Agent internally. This layer will have the correct shape according to the output of your state pipeline, and it can be accessed through `self.input` in your child class of `Topology`. As an abbreviated example:
 
 ```python
-class MyCustomModel(Topology):
+class MyCustomTopology(Topology):
     def define_graph(self, layer1_size, ...):
         X = Dense(layer1_size)(self.input) # accessing the Input layer through self.input
         ...
