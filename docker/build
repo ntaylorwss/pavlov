@@ -16,9 +16,6 @@ else
     compute_device=cpu
 fi
 
-docker build  -t gym-$compute_device --build-arg baseimage=ntaylor22/tensorflow-$compute_device .
+version=$(<../VERSION)
 
-if [ ! -f jupyter_notebook_config.json ]
-then
-    python create_jupyter_password.py
-fi
+docker build  -t ntaylor22/pavlov-$compute_device:$version --build-arg baseimage=ntaylor22/tensorflow-$compute_device .

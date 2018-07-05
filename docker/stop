@@ -1,2 +1,2 @@
 #!/bin/bash
-docker rm -f gym
+docker rm -f pavlov

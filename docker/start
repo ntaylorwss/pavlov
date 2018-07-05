@@ -15,14 +15,13 @@ do
     echo "Trying port = $port"
     netstat -ntpl 2> /dev/null | grep $port -q 
     if [ $? -eq 1 ]; then
-        if [[ $(docker images | grep 'gym-gpu') ]]
+        if [[ $(docker images | grep 'pavlov-gpu') ]]
         then
-            image=gym-gpu
+            image=ntaylor22/pavlov-gpu
         else
-            image=gym-cpu
+            image=ntaylor22/pavlov-cpu
         fi
-        docker run --name gym -d -v $PWD:/home -v /tmp/.X11-unix:/tmp/.X11-unix \
-                   -e DISPLAY=$DISPLAY -p $port:8888 -p 6006:6006 $image
+        docker run --name pavlov -d -v $PWD:/home -p $port:8888 -p 6006:6006 $image
         echo "Using port $port"
         break
     else
