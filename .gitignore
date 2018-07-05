@@ -5,3 +5,4 @@ docker/jupyter_notebook_config.json
 Pavlov.egg-info/
 dist/
 build/
+.isroot
