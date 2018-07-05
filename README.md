@@ -7,9 +7,56 @@ Pavlov is an approach to reinforcement learning focused on a modular design. Thi
 - *Model*. The model is the heart of reinforcement learning; this is where the actual learning takes place. For a full list of available models (being updated continuously), see [Models](#models).
 - *Actor*. The actor is responsible for converting the prediction of the Model into an action to be consumed by the Environment. This includes both exploration and conversion to the correct format for the environment's action space. The Actor will automatically and silently detect the type of action required by the environment (whether continuous, discrete, multi-dimensional discrete, multi-dimensional binary), and perform conversion according to the kind of model and action space it's working with. For more information on the kinds of exploration policies that are available, see [Exploration](#exploration).
 
+It is based on Keras for model building, with a Tensorflow backend.
+
 ## Installation
+Pavlov is available in a Docker image that gives you all the tools you need in a simple and minimal environment. It includes such core components as Keras/Tensorflow, Numpy, Pandas, Matplotlib, as well as other helper libraries.
+
+At the moment, Pavlov is only available for use within this image, and not as a standalone package. I'll be working on relieving this dependency.
+
+#### Getting the image
+There exists two versions of this image: [this one](https://hub.docker.com/r/ntaylor22/pavlov-gpu/) for use with a GPU, and [this one](https://hub.docker.com/r/ntaylor22/pavlov-gpu/) for use without a GPU.
+
+If you wish to use the GPU version, you must first install Nvidia Docker. The steps for installing Nvidia Docker are referenced below. Note that because of the dependency on Nvidia Docker, the GPU version can only be run from Linux variants, as Mac OSX and Windows are not currently supported by Nvidia Docker.
+
+Once you have Nvidia-Docker (or not, if you're using the CPU version), to use this docker image, simply pull it from the repository:
+
+`docker pull ntaylor22/pavlov-gpu`
+OR:
+`docker pull ntaylor22/pavlov-cpu`
+
+#### Installing Nvidia Docker (for pavlov-gpu)
+Installation instructions for Nvidia Docker can be found on their wiki [here](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
+
+One extra post-installation step is to create the file `/etc/docker/daemon.json`, with the following contents:
+```
+{
+    "default-runtime": "nvidia",
+    "runtimes": {
+        "nvidia": {
+            "path": "/usr/bin/nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+
+This will allow you to default to nvidia-docker, rather than using `nvidia-docker run` or the flag `--runtime=nvidia`.
+
+#### Running a container
+Running a Docker container often requires setting a few flags. In this case, the main flags to be set are:
+
+- Required: `-p 8888:8888`: opening port 8888 of the container, which is where the Jupyter server is.
+- Required: `-p 6006:6006`: opening port 6006 of the container, which is where Tensorboard is.
+- Optional: `-v $PWD:/home`: mounting your working directory to /home, which is the working directory of the container.
+- Optional: `--name [container_name]`: setting the name of the container you're going to run.
+
+So a standard command to launch a Pavlov container from a Unix system would be:
+
+`docker run --name pavlov -d --rm -p 8888:8888 -p 6006:6006 -v $PWD:/home pavlov`
 
 ## Getting Started
+### Making an agent
 Here's an example of an end-to-end usage of Pavlov to produce an agent for Breakout and have it run forever. Note that this agent doesn't actually solve Breakout with these settings, but once I figure out what settings solve it I will update the example.
 
 ```python
