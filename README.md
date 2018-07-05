@@ -217,3 +217,14 @@ For any exploration module that requires an important value, such as the epsilon
 - Linear decay. The value decays linearly towards some point over some number of steps, and then flatlines.
 - Exponential decay. The value decays exponentially towards some point over some number of steps, and then asymptotes.
 - Scoping periodic. The value follows an exponential decay over some number of steps, but also oscillates in a sinusoidal wave, with specified period and amplitude. The result is a sinusoidal wave that eventually decays and flatlines.
+
+## Run indefinitely and interrupt cleanly
+Agents are equipped with a method to run episodes indefinitely; essentially an infinite loop of `agent.run_episode()`. This allows you to start an agent, and then walk away, to return at any point and find it continuing to run, without having to try to calculate how long a certain number of episodes may take.
+
+Eventually, you're going to want to interrupt the agent's execution. If you interrupt with SIGINT (ctrl-C, or Jupyter's `Kernel->Interrupt`), you're likely going to stop the agent in an uncomfortable state. Here's the current approach to cleanly stopping infinite execution:
+
+The docker image associated with Pavlov has a command called `pause`, which will wait until the end of an episode, then end the execution of `run_indefinitely()`. The way to run this command, assuming a container name of `pavlov`, is:
+
+`docker exec pavlov pause`
+
+At this point you should see your running Python process (whether Jupyter or Python) print `Stopping.`, and give back control of the program.
