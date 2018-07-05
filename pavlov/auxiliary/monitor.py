@@ -75,14 +75,17 @@ class Monitor:
         """Write metrics to stdout in formatted string."""
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
-        if self.episode > 0 and self.episode % self.report_freq == 0:
-            s = f"End of episode {self.episode}. Last {self.report_freq} episodes: "
+        if self.episode % self.report_freq == 0:
+            s = f"End of episode {self.episode+1}. Last {self.report_freq} episodes: "
             s += f"Average reward: {avg_r}. "
             s += f"Average duration: {avg_d}."
             print(s)
 
-    def new_episode(self):
-        """Reset metric queues and move to next episode."""
+    def new_episode(self, do_logging):
+        """Log if required, write to tensorboard, and Reset metric queues and move to next episode."""
+        if do_logging:
+            self.log_to_stdout()
+        self.write_summary()
         self.rewards.append(0)
         self.durations.append(0)
         self.episode += 1

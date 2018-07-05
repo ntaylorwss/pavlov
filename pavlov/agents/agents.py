@@ -1,8 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import JSAnimation.IPython_display as js_display
-import IPython.display as ipy_display
-import matplotlib.animation
+import cv2
 from ..auxiliary.replay_buffer import ReplayBuffer
 from ..auxiliary.monitor import Monitor
 from .. import util
@@ -100,20 +97,28 @@ class Agent:
             if done:
                 self.reset()
 
-    def render_gif(self, episode=0):
-        """Generates gif of agent's timesteps for given episode index."""
-        frames = self.renders_by_episode[episode]
-        plt.figure(figsize=(frames[0].shape[1] / 72.0,
-                            frames[0].shape[0] / 72.0), dpi=72)
-        patch = plt.imshow(frames[0])
-        plt.axis('off')
+    def episode_to_mp4(self, episode, out_dir):
+        """Generates mp4 of agent's timesteps for given episode number.
+        Only works with environments that render images at each timestep.
 
-        def animate(i):
-            patch.set_data(frames[i])
+        Parameters:
+            episode (int): episode number that you want to take a video of (one-indexed).
+            out_dir (str): directory where you would like to place video file.
+                           filename is auto-generated.
+        """
+        frames = self.renders_by_episode[episode-1]
+        shape = frames[0].shape
+        if not ((len(shape) == 2) or (len(shape) == 3 and shape[2] == 3)):
+            raise TypeError("Environment renderings are not images")
 
-        anim = matplotlib.animation.FuncAnimation(plt.gcf(), animate,
-                                                  frames=len(frames), interval=50)
-        ipy_display(js_display.display_animation(anim, default_mode='loop'))
+        size = frames[0].shape[:-1]
+        fps = 20
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        vid_out = cv2.VideoWriter()
+        vid_out.open(f'{out_dir}/episode{episode}.mp4', fourcc, fps, size, True)
+        for frame in frames:
+            vid_out.write(frame)
+        vid_out.release()
 
     def reset(self):
         """Resets environment to initial state for new episode."""
@@ -162,7 +167,7 @@ class Agent:
 
         return timestep_reward, done
 
-    def run_episode(self, render=False, log=True):
+    def run_episode(self, render=False, do_logging=True):
         """Apply `run_timestep` until episode terminates. Apply monitor for logging."""
         self.renders_by_episode.append([])
         total_reward = 0.
@@ -170,12 +175,9 @@ class Agent:
             reward, done = self.run_timestep(render=render)
             total_reward += reward
             if done:
-                self.monitor.write_summary()
-                self.monitor.new_episode()
+                self.monitor.new_episode(do_logging)
                 self.reset()
                 break
-        if log:
-            self.monitor.log_to_stdout()
 
     def run_indefinitely(self, render=False, log=True):
         """Apply run_episode continuously until keep_running.txt is populated with 'False'."""
