@@ -88,14 +88,14 @@ actor = actors.EpsilonGreedyActor(epsilon_schedule)
 buffer_size = 10000
 batch_size = 64
 
-pipeline = pipeline.Pipeline()
-pipeline.add(transformations.rgb_to_grey())
-pipeline.add(transformations.downsample(new_shape=(84, 84)))
-pipeline.add(transformations.combine_consecutive(2, 'max'))
-pipeline.add(transformations.stack_consecutive(4))
+pline = pipeline.Pipeline()
+pline.add(transformations.rgb_to_grey())
+pline.add(transformations.downsample(new_shape=(84, 84)))
+pline.add(transformations.combine_consecutive(2, 'max'))
+pline.add(transformations.stack_consecutive(4))
 
 agent = agents.Agent(env,
-                     state_pipeline=pipeline,
+                     state_pipeline=pline,
                      model=model, actor=actor,
                      buffer_size=buffer_size, batch_size=batch_size,
                      report_freq=1, warmup_length=50)
