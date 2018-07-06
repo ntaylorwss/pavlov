@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import cv2
 from ..auxiliary.replay_buffer import ReplayBuffer
@@ -82,6 +83,7 @@ class Agent:
         self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
         self.renders_by_episode = []
+        self.start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%s')
 
         self._empty_running_file()
         self._warmup_replay_buffer()
@@ -115,7 +117,8 @@ class Agent:
         fps = 20
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         vid_out = cv2.VideoWriter()
-        vid_out.open(f'{out_dir}/episode{episode}.mp4', fourcc, fps, size, True)
+        filename = '{}/{}-episode{}.mp4'.format(self.start_timestamp, out_dir, episode)
+        vid_out.open(filename, fourcc, fps, size, True)
         for frame in frames:
             vid_out.write(frame)
         vid_out.release()
@@ -180,11 +183,10 @@ class Agent:
                 break
 
     def run_indefinitely(self, render=False, log=True):
-        """Apply run_episode continuously until keep_running.txt is populated with 'False'."""
-        while True:
-            self.run_episode(render=render, log=log)
-            with open('/home/pavlov/agents/keep_running.txt') as f:
-                contents = f.read().strip()
-                if contents == 'False':
-                    print("Stopping.")
-                    break
+        """Apply run_episode in an infinite loop; terminated by KeyboardInterrupt.
+        The keyboard interrupt will be handled by first finishing the running episode,
+        then terminating the loop and thus function.
+        """
+        with util.interrupt.AtomicLoop() as loop:
+            while loop.run:
+                self.run_episode(render=render, do_logging=log)
