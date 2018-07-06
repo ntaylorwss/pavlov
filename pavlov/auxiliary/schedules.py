@@ -1,20 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import copy
+from custom_inherit import DocInheritMeta
 
 
-class Schedule:
+class Schedule(metaclass=DocInheritMeta(style="numpy"):
     """Base class for value schedule, used for decaying values in exploration methods.
 
-    Parameters:
-        start_value (float): initial value at first timestep.
-        interval (int): update interval in number of timesteps (-1 means every episode).
-                        default: -1.
+    Parameters
+    ----------
+    start_value : float
+        initial value at first timestep.
+    interval : int
+        update interval in number of timesteps (default is -1, which means every episode).
 
-    Member variables:
-        t (int): current timestep index.
-        value (float): current value.
-        interval (int): update interval in number of timesteps.
+    Attributes
+    ----------
+        t : int
+            current timestep index.
+        value : float
+            current value.
+        interval : int
+            update interval in number of timesteps.
     """
     def __init__(self, start_value, interval=-1):
         self.timestep = 0
@@ -26,7 +33,13 @@ class Schedule:
         pass
 
     def step(self, new_episode):
-        """Wrap the schedule logic to determine based on interval when to iterate value."""
+        """Wrap the schedule logic to determine based on interval when to iterate value.
+
+        Parameters
+        ----------
+        new_episode : bool
+            flag to indicate whether this step is one that resets the environment.
+        """
         if self.interval > 0:
             if self.timestep % self.interval == 0:
                 self._step()
@@ -36,29 +49,42 @@ class Schedule:
         self.timestep += 1
 
     def get(self):
-        """Get value, bounded in [0, 1]."""
+        """Get value, bounded in [0, 1].
+
+        Returns
+        -------
+        float
+            current value given by schedule.
+        """
         return max([0., min([1., self.value])])
 
 
-class Constant(Schedule):
+class ConstantSchedule(Schedule):
     """A schedule whose value never changes."""
     def __init__(self, start_value, interval=-1):
         super().__init__(start_value, interval)
 
     def _step(self):
+        """Do nothing, since value never changes."""
         pass
 
 
-class LinearDecay(Schedule):
+class LinearDecaySchedule(Schedule):
     """A schedule whose value decreases linearly, before being capped at some value.
 
-    Additional parameters:
-        final_value (float): value to be capped at.
-        num_steps (int): number of steps before value is capped.
+    Parameters
+    ----------
+    final_value : float
+        value to be capped at.
+    num_steps : int
+        number of steps before value is capped.
 
-    Additional member variables:
-        per_step (float): amount to decrease by each step.
-        num_steps (int): number of steps before value is capped.
+    Attributes
+    ----------
+    per_step : float
+        amount to decrease by each step.
+    num_steps : int
+        number of steps before value is capped.
     """
     def __init__(self, start_value, final_value, num_steps, interval=-1):
         super().__init__(start_value, interval)
@@ -66,20 +92,27 @@ class LinearDecay(Schedule):
         self.num_steps = num_steps
 
     def _step(self):
+        """Subtract `per_step` from value."""
         if self.timestep < self.num_steps:
             self.value -= self.per_step
 
 
-class ExponentialDecay(Schedule):
+class ExponentialDecaySchedule(Schedule):
     """A schedule whose value decreases exponentially, to eventually asymptote at some value.
-    
-    Additional parameters:
-        final_value (float): value to be capped at.
-        decay_rate (float): rate of the exponential decay; the `a` in `e^(at)`.
 
-    Additional member variables:
-        final_value (float): value to be capped at.
-        decay_rate (float): rate of the exponential decay; the `a` in `e^(at)`.
+    Parameters
+    ----------
+    final_value : float
+        value to be capped at.
+    decay_rate : float
+        rate of the exponential decay; the `a` in `e^(at)`.
+
+    Attributes
+    ----------
+        final_value : float
+            value to asymptote towards.
+        decay_rate : float
+            rate of the exponential decay; the `a` in `e^(at)`.
     """
     def __init__(self, start_value, final_value, decay_rate, interval=-1):
         # TODO: make it actually asymptote to final_value
@@ -88,21 +121,38 @@ class ExponentialDecay(Schedule):
         self.decay_rate = decay_rate
 
     def _step(self):
+        """Decay by the defined exponential factor."""
         self.value *= np.e ** (-self.decay_rate * self.timestep)
 
 
-class ScopingPeriodic(Schedule):
+class ScopingPeriodicSchedule(Schedule):
+    """A schedule whose value decreases exponentially, but is also sinusoidal.
+
+    Parameters
+    ----------
+    target_value : float
+        value to asymptote towards.
+    duration : int
+        number of steps to get to `target_value`.
+    threshold : float
+        difference from `target_value` where it is considered reached.
+    amp : float
+        amplitude of the sinusoidal wave.
+    period : float
+        period of the sinusoidal wave.
+    """
+
     def __init__(self, start_value, target_value, duration, threshold=0.0001,
                  amp=0.2, period=0.1, interval=-1):
         super().__init__(start_value, interval)
-        self.timesteparget_value = target_value
+        self.target_value = target_value
         self.decay_factor = ((1 - self.value) - np.log(threshold)) / duration
         self.amp = amp
         self.period = period
         self.restart_prob = 1. / duration
 
     def _decay(self, t):
-        return np.exp(-self.decay_factor * t + (self.value - 1)) + self.timesteparget_value
+        return np.exp(-self.decay_factor * t + (self.value - 1)) + self.target_value
 
     def _periodic(self, t):
         return self.amp * np.sin(self.period * t) + 0.5
@@ -115,10 +165,13 @@ class ScopingPeriodic(Schedule):
 
 def graph_schedule(schedule, n_vals):
     """Create matplot graph of schedule values over a given number of timesteps.
-    
-    Parameters:
-        schedule (pavlov.Schedule): the schedule to be examined.
-        n_vals (int): number of values to visualize; the domain of the graph is [0, n_vals).
+
+    Parameters
+    ----------
+        schedule : pavlov.Schedule
+            the schedule to be examined.
+        n_vals : int
+            number of values to visualize; the domain of the graph is [0, n_vals).
     """
     this_schedule = copy(schedule)
     this_schedule.interval = 1

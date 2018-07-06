@@ -1,9 +1,49 @@
+"""Actors add exploration to model predictions and convert them to the appropriate format for acting.
+
+Actors become associated with Agents in a 1-to-1 relationship and collect information
+about the Model and Environment that they're working with through the Agent.
+They use this information to convert predictions to the appropriate format,
+such as converting a policy vector from a Policy model to an integer for a Discrete action space.
+
+Often, an Actor will require at least one Schedule to govern a particular value, such as
+epsilon for the epsilon-greedy approach.
+
+Example
+-------
+
+::
+
+    schedule = pavlov.auxiliary.schedules.ConstantSchedule(0.1)
+    actor = pavlov.actors.EpsilonGreedyActor(epsilon_schedule=schedule)
+
+Currently implemented exploration methods are:
+- Epsilon greedy.
+"""
+
 import numpy as np
+from custom_inherit import DocInheritMeta
 from ..util import ActionModelMismatchError
 
 
-class Actor:
-    """Component responsible both for exploration and converting model predictions to actions."""
+class Actor(metaclass=DocInheritMeta(style="numpy")):
+    """Component responsible both for exploration and converting model predictions to actions.
+
+    Returns 2 actions at a time: the first to be consumed by the model,
+                                 the second to be consumed by the environment.
+
+    Attributes
+    -------
+    explore_and_convert_fns : dict of {str : dict of {str : func}}
+        Functions corresponding to every combination of action space and model type.
+        Action space is the first key, model type is the second key.
+        The functions add exploration and convert the chosen action to the correct format.
+    action_space : gym.Space
+        The action space object of the associated environment.
+    action_type : str
+        The class name of the action space as a lowercased string.
+    prediction_type : {'value', 'policy'}
+        Indicates whether the model outputs action-values or a policy vector for the state.
+    """
     def __init__(self):
         # a dictionary of functions makes choosing the method of conversion easier
         self.explore_and_convert_fns = {
@@ -14,6 +54,9 @@ class Actor:
             'box': {'policy': self._box_policy, 'value': self._box_value},
             'multibinary': {'policy': self._multibinary_policy,
                             'value': self._multibinary_value}}
+        self.action_space = None
+        self.action_type = None
+        self.prediction_type = None
 
     def configure(self, agent):
         """Associate actor with agent, picking up information about its action space and model."""
@@ -26,86 +69,244 @@ class Actor:
         return self.explore_and_convert_fns[self.action_type][self.prediction_type](pred)
 
     def warming_action(self):
-        """Choose a random action without involving the model."""
-        a_for_env = self.action_space.sample()
+        """Choose a random action without involving the model.
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
+        action_for_env = self.action_space.sample()
         if self.action_type == 'discrete':
-            a_for_model = np.eye(self.action_space.n)[a_for_env]
+            action_for_model = np.eye(self.action_space.n)[action_for_env]
         elif self.action_type == 'multidiscrete':
-            a_for_model = [np.eye(n)[a_for_env[i]]
+            action_for_model = [np.eye(n)[action_for_env[i]]
                            for i, n in enumerate(self.action_space.nvec)]
         elif self.action_type == 'box':
-            a_for_model = a_for_env
+            action_for_model = action_for_env
         elif self.action_type == 'multibinary':
-            a_for_model = [np.eye(2)[env_a] for env_a in a_for_env]
-        return a_for_model, a_for_env
+            action_for_model = [np.eye(2)[env_a] for env_a in action_for_env]
+        return action_for_model, action_for_env
 
-    def step(self):
-        """Move one timestep ahead. Main purpose is to advance value schedules."""
+    def step(self, new_episode):
+        """Move one timestep ahead. Main purpose is to advance value schedules.
+
+        Parameters
+        ----------
+        new_episode : bool
+            A flag indicating whether this step is one that resets the environment.
+        """
         pass
 
     def _discrete_policy(self, pred):
-        """Exploration and conversion function for a Discrete action space + Policy model."""
-        pass
+        """Exploration and conversion function for a Discrete action space + Policy model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _discrete_value(self, pred):
-        """Exploration and conversion function for a Discrete action space + Value model."""
-        pass
+        """Exploration and conversion function for a Discrete action space + Value model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _multidiscrete_policy(self, pred):
-        """Exploration and conversion function for a Multi-Discrete action space + Policy model."""
-        pass
+        """Exploration and conversion function for a Multi-Discrete action space + Policy model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _multidiscrete_value(self, pred):
-        """Exploration and conversion function for a Multi-Discrete action space + Value model."""
-        pass
+        """Exploration and conversion function for a Multi-Discrete action space + Value model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _box_policy(self, pred):
-        """Exploration and conversion function for a Box action space + Policy model."""
-        pass
+        """Exploration and conversion function for a Box action space + Policy model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _box_value(self, pred):
-        """Exploration and conversion function for a Box action space + Value model."""
-        pass
+        """Exploration and conversion function for a Box action space + Value model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _multibinary_policy(self, pred):
-        """Exploration and conversion function for a Multi-Binary action space + Policy model."""
-        pass
+        """Exploration and conversion function for a Multi-Binary action space + Policy model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def _multibinary_value(self, pred):
-        """Exploration and conversion function for a Multi-Binary action space + Value model."""
+        """Exploration and conversion function for a Multi-Binary action space + Value model.
+
+        Parameters
+        ----------
+        pred : numpy.ndarray
+            The prediction output by the model, to be converted.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
         pass
 
 
 class EpsilonGreedyActor(Actor):
+    """Takes a random action with a varying probability, otherwise does what it considers optimal.
+
+    Parameters
+    ----------
+    epsilon_schedule : pavlov.auxiliary.Schedule
+        The schedule that governs the value of epsilon.
+
+    Attributes
+    ----------
+    epsilon_schedule : pavlov.auxiliary.Schedule
+        The schedule that governs the value of epsilon.
+    epsilon : float
+        The current value of epsilon to be applied.
+    """
     def __init__(self, epsilon_schedule):
         super().__init__()
         self.epsilon_schedule = epsilon_schedule
         self.epsilon = self.epsilon_schedule.get()
 
+    def step(self, new_episode):
+        """Iterate the epsilon value according to its schedule."""
+        self.epsilon_schedule.step(new_episode)
+        self.epsilon = self.epsilon_schedule.get()
+
     def _discrete_policy(self, pred):
+        """Apply epsilon-greedy to discrete action space with a policy-based model.
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         if np.random.random() < self.epsilon:
-            a_for_env = self.action_space.sample()
+            action_for_env = self.action_space.sample()
         else:
-            a_for_env = np.argmax(pred)
-        a_for_model = np.eye(self.action_space.n)[a_for_env]
-        return a_for_model, a_for_env
+            action_for_env = np.argmax(pred)
+        action_for_model = np.eye(self.action_space.n)[action_for_env]
+        return action_for_model, action_for_env
 
     def _discrete_value(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         return self._discrete_policy(pred)
 
     def _multidiscrete_policy(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         if np.random.random() < self.epsilon:
-            a_for_env = self.action_space.sample()
+            action_for_env = self.action_space.sample()
         else:
-            a_for_env = np.array(list(map(np.argmax, pred)))
-        a_for_model = [np.eye(n)[a_for_env[i]]
+            action_for_env = np.array(list(map(np.argmax, pred)))
+        action_for_model = [np.eye(n)[action_for_env[i]]
                        for i, n in enumerate(self.action_space.nvec)]
-        return a_for_model, a_for_env
+        return action_for_model, action_for_env
 
     def _multidiscrete_value(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         return self._multidiscrete_policy(pred)
 
     def _box_policy(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         if np.random.random() < self.epsilon:
             both_actions = self.action_space.sample()
             return both_actions, both_actions
@@ -113,23 +314,43 @@ class EpsilonGreedyActor(Actor):
             return pred, pred
 
     def _box_value(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         raise ActionModelMismatchError('box', 'value')
 
     def _multibinary_policy(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         return self._discrete_policy(pred)
 
     def _multibinary_value(self, pred):
+        """
+
+        Returns
+        -------
+        action_for_model : numpy.ndarray
+            The action that will be consumed by the model for learning.
+        action_for_env : numpy.ndarray or int or float
+            The action that will be consumed by the environment to step.
+        """
         return self._discrete_policy(pred)
 
-    def step(self, new_episode):
-        self.epsilon_schedule.step(new_episode)
-        self.epsilon = self.epsilon_schedule.get()
 
-    @property
-    def explore_rate(self):
-        return round(self.epsilon_schedule.get(), 3)
-
-
+'''
 class EpsilonNoisyActor(Actor):
     def __init__(self, eps_schedule, mu_schedule, sigma_schedule):
         super.__init__()
@@ -141,3 +362,4 @@ class EpsilonNoisyActor(Actor):
         self.sigma = self.sigma_schedule.get()
 
     # TODO: this whole thing
+'''

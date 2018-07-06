@@ -8,17 +8,25 @@ class ReplayBuffer:
 
     Always stores the following: states, actions, rewards, next states, done flags.
 
-    Parameters:
-        buffer_size (int): limit for how many observations to hold in total.
-        state_dtype (type): numpy datatype for states to be stored in.
-                            default: np.float32.
+    Parameters
+    ----------
+        buffer_size : int
+            limit for how many observations to hold in total.
+        state_dtype : type
+            numpy datatype for states to be stored in (default is np.float32).
 
-    Member variables:
-        buffer_size (int): limit for how many observations are held in total.
-        current_idx (int): current position in `buffer`; circular.
-        current_size (int): number of items in `buffer`; caps at `buffer_size`.
-        state_dtype (type): numpy datatype for states to be stored in.
-        buffer (dict): all observations as dictionary of arrays.
+    Attributes
+    ----------
+        buffer_size : int
+            limit for how many observations are held in total.
+        current_idx : int
+            current position in `buffer`; circular.
+        current_size : int
+            number of items in `buffer`; caps at `buffer_size`.
+        state_dtype : type
+            numpy datatype for states to be stored in.
+        buffer : dict of {str : np.ndarray}
+            all observations as dictionary of arrays.
     """
     def __init__(self, buffer_size, state_dtype):
         self.buffer_size = buffer_size
@@ -29,8 +37,10 @@ class ReplayBuffer:
     def configure(self, agent):
         """Setup buffer, using shape information from action space and state pipeline.
 
-        Parameters:
-            agent (pavlov.Agent): the Agent object that the replay buffer is associated with.
+        Parameters
+        ----------
+        agent : pavlov.Agent
+            the Agent object that the replay buffer is associated with.
         """
         self.state_shape = agent.state_pipeline.out_dims
         self.action_space = agent.env.action_space
@@ -56,8 +66,9 @@ class ReplayBuffer:
     def get_batch(self, batch_size):
         """Return random sample of observations from buffer for all keys, as dictionary.
 
-        Parameters:
-            batch_size (int): number of observations to return.
+        Parameters
+        ----------
+        batch_size (int): number of observations to return.
         """
         inds = np.random.randint(self.current_size, size=batch_size)
         if self.action_type in ['discrete', 'box']:
@@ -73,8 +84,18 @@ class ReplayBuffer:
     def add(self, state, action, reward, next_state, done):
         """Add single observation to all keys of buffer.
 
-        Parameters:
-            state, action, reward, next_state, done: observation to be added.
+        Parameters
+        ----------
+        state : np.ndarray
+            state to be added to buffer.
+        action : np.ndarray
+            model-compatible version of action to be added to buffer.
+        reward : float
+            reward to be added to buffer.
+        next_state : np.ndarray
+            next state to be added to buffer.
+        done : bool
+            done flag to be added to buffer.
         """
         self.buffer['states'][self.current_idx,:] = state
         if self.action_type in ['discrete', 'box']:

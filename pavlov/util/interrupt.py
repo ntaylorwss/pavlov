@@ -3,6 +3,7 @@ import signal
 
 class AtomicLoop:
     """A sigint handler that first finishes the iteration it's on, then terminates cleanly.
+
     This is useful for running an agent indefinitely, since it can be stopped
     between episodes cleanly with a KeyboardInterrupt.
     Credit: @kysely, https://github.com/kysely

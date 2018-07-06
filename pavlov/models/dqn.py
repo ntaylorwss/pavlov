@@ -15,19 +15,25 @@ class DQNModel(BaseModel):
     Takes in a base topology, which is a headless Keras computation graph for state transformation.
     Adds layers to that as needed for action incorporation, produces state-action values.
 
-    Parameters:
-        gamma (float): discount factor for Q Learning.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        optimizer (keras.Optimizer): full optimizer object.
+    Parameters
+    ----------
+    gamma : float
+        discount factor for Q Learning.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    optimizer : keras.Optimizer
+        optimizer for model.
 
-    Member variables:
-        prediction_type (str): indicating whether it's a policy-based or value-based model.
-                               defined by child class;
-                               parent's member is a placeholder.
-                               options: policy, value.
-        gamma (float): discount factor for Q Learning.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        optimizer (keras.Optimizer): full optimizer object.
+    Attributes
+    ----------
+    prediction_type : {'policy', 'value'}
+        indicating whether it's a policy-based or value-based model.
+    gamma : float
+        discount factor for Q Learning.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    optimizer : keras.Optimizer
+        optimizer for model.
     """
     def __init__(self, topology, gamma, tau, optimizer):
         super().__init__(topology)
@@ -37,11 +43,18 @@ class DQNModel(BaseModel):
         self.optimizer = optimizer
 
     def _configure_model(self):
+        """Convert given topology to identical main and target models."""
         self.model = self._topology_to_model()
         self.target_model = self._topology_to_model()
 
     def _topology_to_model(self):
-        """Extend `self.topology` to produce an action-value output (action as input)."""
+        """Extend `self.topology` to produce an action-value output (action as input).
+
+        Returns
+        -------
+        keras.Model
+            a compiled Q model.
+        """
         if self.topology.output.shape.ndims > 2:
             base_out = Flatten()(self.topology.output)
         else:
@@ -67,10 +80,11 @@ class DQNModel(BaseModel):
         return model
 
     def has_nan(self):
+        """Check Q model weights."""
         return any(np.isnan(np.sum(W)) for W in self.model.get_weights())
 
     def fit(self, states, actions, rewards, next_states, dones):
-        """Fit network to batch of observations from replay buffer."""
+        """Get Q value for actions from target network, train on those targets."""
         max_next_q = np.max(self.target_predict(next_states, single=False), axis=1)
         targets = np.expand_dims(rewards + (1 - dones) * self.gamma * max_next_q, -1)
         targets = targets * actions  # makes it one-hot, value in the place of the action
@@ -78,19 +92,29 @@ class DQNModel(BaseModel):
         self.target_fit()
 
     def target_fit(self):
-        """Update target network towards main network according to `tau`."""
+        """Update target network towards main network according to tau."""
         W = [self.tau*cw + (1-self.tau)*tw
              for cw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
         self.target_model.set_weights(W)
 
     def _predict(self, model, state, action, single):
-        """General function to predict value for state and action with given model.
+        """General function to predict state-action value for given input with a given model.
 
-        Parameters:
-            model (keras.Model): either `self.model` or `self.target_model`.
-            state (np.array): state input to predict for; could be single observation or batch.
-            action (np.array): action input to predict for; could be single observation or batch.
-            single (bool): flag to indicate whether state/action input is single observation or batch.
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
         """
         state = np.expand_dims(state, 0) if single else state
         if self.action_type == 'discrete':
@@ -120,9 +144,43 @@ class DQNModel(BaseModel):
         return model.predict(model_in)
 
     def predict(self, state, action=None, single=True):
-        """Apply `_predict` with `self.model`."""
+        """Predict a policy for the given state and action with the main model.
+
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
+        """
         return self._predict(self.model, state, action, single)
 
     def target_predict(self, state, action=None, single=True):
-        """Apply `_predict` with `self.target_model`."""
+        """Predict a policy for the given state and action with the target model.
+
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
+        """
         return self._predict(self.target_model, state, action, single)

@@ -16,6 +16,11 @@ class Topology:
     to define the model, you would make those the parameters of the
     child method `define_graph`, and then initialize
     the object with `Topology(layer_sizes, activation)`.
+
+    Parameters
+    ----------
+    **define_graph_kwargs
+        kwargs to be passed to define_graph method.
     """
     def __init__(self, **define_graph_kwargs):
         """Store arguments for parameters required by define_graph in a dictionary.
@@ -25,8 +30,14 @@ class Topology:
 
     def configure(self, agent):
         """Set up input and output layers and store them in member variables.
+
         Input is configured according to the associated agent.
         Output is the return value of define_graph, as defined by the child class.
+
+        Parameters
+        ----------
+        agent : pavlov.Agent
+            Agent to associate with model.
         """
         self.input = Input(shape=agent.state_pipeline.out_dims,
                            dtype=agent.replay_buffer.state_dtype)
@@ -34,9 +45,19 @@ class Topology:
         self.output = self.define_graph(**self.define_graph_kwargs)
 
     def define_graph(self, **define_graph_kwargs):
-        """Define any arbitrary Keras graph, making use of the kwargs passed to init."""
+        """Define any arbitrary Keras graph, making use of the kwargs passed to init.
+
+        Parameters
+        ----------
+        **define_graph_kwargs
+            Can be any arguments necessary to define a model.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
         # Part 3: define_graph is necessarily declared with the right keyword args
-        pass
+        raise NotImplementedError
 
 
 class CNNTopology(Topology):
@@ -47,15 +68,28 @@ class CNNTopology(Topology):
     Uses `activation` as activation along the way.
     Always uses `same` padding.
     The input shape is discovered at configuration time, from the state pipeline.
-
-    Parameters (passed as kwargs):
-        conv_layer_sizes (list[int]): number of filters in each convolutional layer.
-        fc_layer_sizes (list[int]): number of units in each dense layer.
-        kernel_sizes (list[2-tuple(int)]): 2-dimensional size of convolutional kernel.
-        strides (list[2-tuple(int)]): dimensions of stride in convolution.
-        activation (str): activation function to be used in each layer.
     """
     def define_graph(self, conv_layer_sizes, fc_layer_sizes, kernel_sizes, strides, activation):
+        """Defines headless Keras graph for a CNN.
+
+        Parameters
+        ----------
+        conv_layer_sizes : list of int
+            number of filters in each convolutional layer.
+        fc_layer_sizes : list of int
+            number of units in each dense layer.
+        kernel_sizes : list of 2-tuple of int
+            2-dimensional size of convolutional kernel.
+        strides : list of 2-tuple of int
+            dimensions of stride in convolution.
+        activation : str
+            activation function to be used in each layer.
+
+        Returns
+        -------
+        out : keras.Layer
+            Final Keras layer of headless architecture, to be passed on to the final layers.
+        """
         out = self.input
         for l_size, k_size, stride in zip(conv_layer_sizes, kernel_sizes, strides):
             out = Conv2D(filters=l_size, kernel_size=k_size, padding='same',
@@ -69,13 +103,23 @@ class CNNTopology(Topology):
 class DenseTopology(Topology):
     """Creates headless Keras computation graph for a fully connected architecture.
 
-    Simply passes input through a series of dense layers, with chosen `activation`.
-
-    Parameters:
-        layer_sizes (list[int]): number of units in each dense layer.
-        activation (str): activation function to be used in each layer.
+    Passes input through a series of dense layers, with chosen `activation`.
     """
     def define_graph(self, layer_sizes, activation):
+        """Defines headless Keras graph for a fully connected network.
+
+        Parameters
+        ----------
+            layer_sizes : list of int
+                number of units in each dense layer.
+            activation : str
+                activation function to be used in each layer.
+
+        Returns
+        -------
+        out : keras.Layer
+            Final Keras layer of headless architecture, to be passed on to the final layers.
+        """
         out = self.input
         for L in layer_sizes:
             out = Dense(L, activation=activation)(out)

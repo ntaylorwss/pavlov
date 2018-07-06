@@ -1,8 +1,9 @@
 import tensorflow as tf
 import keras.backend as K
+from custom_inherit import DocInheritMeta
 
 
-class BaseModel:
+class BaseModel(metaclass=DocInheritMeta(style="numpy"):
     """Base class for all kinds of reinforcement learning models.
 
     All models should take in some form of feature-extracting topology,
@@ -12,21 +13,20 @@ class BaseModel:
     The public interface should also be common among models, so that is
     defined here as well.
 
-    Common parameters:
-        topology (pavlov.Topology): feature-extracting Keras model graph object
-                                      defining the body of the model.
-    Common member variables:
-        topology (pavlov.Topology): feature-extracting Keras model graph object
-                                      defining the body of the model.
-        prediction_type (str): indicating whether it's a policy-based or value-based model.
-                               defined by child class;
-                               parent's member is a placeholder.
-                               options: policy, value.
-        session (tf.Session): tensorflow session that the model(s) will live in.
+    Parameters
+    ----------
+    topology : pavlov.Topology
+        feature-extracting Keras model graph object defining the body of the model.
+
+    Attributes
+    ----------
+    topology : pavlov.Topology
+        feature-extracting Keras model graph object defining the body of the model.
+    session : tf.Session
+        Tensorflow session that the model(s) will live in.
     """
     def __init__(self, topology):
         self.topology = topology
-        self.prediction_type = None
         self.session = tf.Session()
         K.set_session(self.session)
 
@@ -46,9 +46,37 @@ class BaseModel:
         self._configure_model()
 
     def fit(self, states, actions, rewards, next_states, dones):
-        """Fit model to batch from experience. May or may not use all inputs."""
-        pass
+        """Fit model to batch from experience. May or may not use all inputs.
+
+        Parameters
+        ----------
+        states : np.ndarray
+            states to fit to.
+        actions : np.ndarray
+            actions to fit to.
+        rewards : np.ndarray
+            rewards to fit to.
+        next_states : np.ndarray
+            next states to fit to.
+        dones : np.ndarray
+            done flags to fit to.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError
 
     def predict(self, state):
-        """Return model output for given state input. May be policy or value."""
-        pass
+        """Return model output for given state input. May be policy or value.
+
+        Parameters
+        ----------
+        state : np.ndarray
+            state input to produce output for.
+
+        Raises
+        ------
+        NotImplementedError.
+        """
+        raise NotImplementedError

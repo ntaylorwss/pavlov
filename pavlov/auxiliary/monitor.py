@@ -1,3 +1,12 @@
+"""A monitor keeps track of metrics, runs tensorboard, and ensures model health.
+
+Monitors become associated with Agents in a 1-to-1 relationship and collect information
+about the Model that they're working with through the Agent.
+They use this information to configure tensorboard as well as inspect the Model's health.
+
+Model health includes, at this time, checking for NaN weights.
+"""
+
 import collections
 import numpy as np
 import tensorflow as tf
@@ -9,25 +18,38 @@ class Monitor:
     Prints average of previous episode metrics to stdout at defined interval.
     Writes logs for tensorboard to use for visualization of these metrics.
 
-    Parameters:
-        save_path (str): file path for tensorboard logs.
-                         default: /var/log/.
-        report_freq (int): interval for printing to stdout, in number of episodes.
+    Parameters
+    ----------
+        report_frequency : int
+            interval for printing to stdout, in number of episodes.
+        save_path : str
+            file path for tensorboard logs.
 
-    Member variables:
-        agent (pavlov.Agent): the agent the metrics are tracking.
-        save_path (str): file path for tensorboard logs
-        report_freq (int): interval for printing to stdout, in number of episodes.
-        rewards (collections.deque): holds last `report_freq` episodes' reward totals.
-        durations (collections.deque): holds last `report_freq` episodes' durations.
-        episode (int): current episode number of agent.
-        summary_placeholders ([tf object]): tensorflow op for summaries.
-        update_ops ([tf object]): tensorflow op for summaries.
-        summary_op (tf object): tensorflow op for summaries.
-        summary_writer (tf object): tensorflow op for summaries.
+    Attributes
+    ----------
+        agent : pavlov.Agent
+            the agent the metrics are tracking.
+        save_path : str
+            file path for tensorboard logs
+        report_frequency : int
+            interval for printing to stdout, in number of episodes.
+        rewards : collections.deque
+            holds last `report_frequency` episodes' reward totals.
+        durations : collections.deque
+            holds last `report_frequency` episodes' durations.
+        episode : int
+            current episode number of agent.
+        summary_placeholders : list of tensorflow ops
+            tensorflow op for summaries.
+        update_ops : list of tensorflow ops
+            tensorflow op for summaries.
+        summary_op : list of tensorflow ops
+            tensorflow op for summaries.
+        summary_writer : list of tensorflow ops
+            tensorflow op for summaries.
     """
-    def __init__(self, report_freq, save_path):
-        self.report_freq = report_freq
+    def __init__(self, report_frequency, save_path):
+        self.report_frequency = report_frequency
         self.save_path = save_path
         self.rewards = collections.deque([0], maxlen=report_freq)
         self.durations = collections.deque([0], maxlen=report_freq)
@@ -47,22 +69,40 @@ class Monitor:
         return summary_placeholders, update_ops, summary_op
 
     def configure(self, agent):
-        """Associate monitor with agent, picking up information about its model."""
+        """Associate monitor with agent, picking up information about its model.
+
+        Parameters
+        ----------
+        agent : pavlov.Agent
+            Agent to be monitored.
+        """
         self.agent = agent
         self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
         self.summary_writer = tf.summary.FileWriter(self.save_path, agent.model.session.graph)
 
     def get_metrics(self):
-        """Return averages over `report_freq` window of the two metrics as tuple."""
+        """Return averages over `report_frequency` window of the two metrics as tuple."""
         return (np.mean(self.rewards), np.mean(self.durations))
 
     def step(self, reward):
-        """Add reward and increment duration for timestep."""
+        """Add reward and increment duration for timestep.
+
+        Parameters
+        ----------
+        reward : float
+            reward for the episode, to be added to the log.
+        """
         self.rewards[-1] += reward
         self.durations[-1] += 1
 
     def check_model_health(self):
-        """Perform checks to ensure that the model hasn't hit an unrecoverable state."""
+        """Perform checks to ensure that the model hasn't hit an unrecoverable state.
+        
+        Raises
+        ------
+        ValueError
+            raised if model is in 'unhealthy' state.
+        """
         if self.agent.model.has_nan():
             msg = "Model has hit NaN weights: check #37 here: https://tinyurl.com/yahuwbno"
             raise ValueError(msg)
@@ -81,7 +121,7 @@ class Monitor:
         """Write metrics to stdout in formatted string."""
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
-        if self.episode > 0 and self.episode % self.report_freq == 0:
+        if self.episode > 0 and self.episode % self.report_frequency == 0:
             s = f"End of episode {self.episode}. Last {self.report_freq} episodes: "
             s += f"Average reward: {avg_r}. "
             s += f"Average duration: {avg_d}."
@@ -89,7 +129,13 @@ class Monitor:
 
     def new_episode(self, do_logging):
         """Prepare for new episode.
+
         Tasks: check model health, log if required, write to tensorboard, start new metrics.
+
+        Parameters
+        ----------
+        do_logging : bool
+            indicate whether to log to stdout at the end of the episode.
         """
         self.check_model_health()
         if do_logging:

@@ -14,28 +14,44 @@ class DDPGModel(BaseModel):
     Takes in a base topology, which is a headless Keras computation graph for state transformation.
     Adds layers to that as needed for actor and critic networks, including incorporating actions.
 
-    Additional parameters:
-        activation (str/keras.Activation): final activation function just for actor model output.
-        gamma (float): discount factor for value function.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        actor_optimizer (tf.train.Optimizer): full optimizer object for actor network.
-                                              MUST be tensorflow type, not Keras, unfortunately.
-        critic_optimizer (keras.Optimizer): full optimizer object for critic network.
+    Parameters
+    ----------
+    activation : str or keras.Activation
+        final activation function just for actor model output.
+    gamma : float
+        discount factor for value function.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    actor_optimizer : tf.train.Optimizer
+        optimizer for actor network.
+    critic_optimizer : keras.Optimizer
+        optimizer for critic network.
 
-    Additional member variables:
-        prediction_type (str): indicating whether it's a policy-based or value-based model.
-                               defined by child class;
-                               parent's member is a placeholder.
-                               options: policy, value.
-        gamma (float): discount factor for value function.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        actor_optimizer (tf.train.Optimizer): full optimizer object for actor network.
-                                              MUST be tensorflow type, not Keras, unfortunately.
-        critic_optimizer (keras.Optimizer): full optimizer object for critic network.
-        action_space (gym.spaces.*): whole action space object from environment.
-        action_type (str): class name of action space.
-        actor (pavlov.ActorNetwork): actor network. I/O: state -> policy vector.
-        critic (pavlov.CriticNetwork): critic network. I/O: [state, action] -> value scalar.
+    Attributes
+    ----------
+    prediction_type : {'policy', 'value'}
+        indicating whether it's a policy-based or value-based model.
+    gamma : float
+        discount factor for value function.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    actor_optimizer : tf.train.Optimizer
+        optimizer for actor network.
+    critic_optimizer : keras.Optimizer
+        full optimizer object for critic network.
+    action_space : gym.Space
+        action space from environment.
+    action_type : str
+        lowercased class name of action space.
+    actor : pavlov.ActorNetwork
+        actor network with I/O of `state -> policy vector`.
+    critic : pavlov.CriticNetwork
+        critic network with I/O of `[state, action] -> value scalar`.
+
+    Notes
+    -----
+        actor_optimizer must be of base type tf.train.Optimizer, meaning from the tf.train module.
+        A Keras optimizer will not work for this particular parameter.
     """
 
     def __init__(self, topology, activation, gamma, tau,
@@ -48,6 +64,7 @@ class DDPGModel(BaseModel):
         self.critic_optimizer = critic_optimizer
 
     def _configure_model(self):
+        """Generate actor and critic models."""
         self.actor = ActorNetwork(self, self.session,
                                   self.topology.input, self.topology.output,
                                   self.activation, self.tau, self.actor_optimizer)
@@ -56,11 +73,12 @@ class DDPGModel(BaseModel):
                                     self.activation, self.tau, self.critic_optimizer)
 
     def has_nan(self):
+        """Check both actor and critic models for nan."""
         return (any(np.isnan(np.sum(W)) for W in self.actor.model.get_weights())
                 or any(np.isnan(np.sum(W)) for W in self.critic.model.get_weights()))
 
     def fit(self, states, actions, rewards, next_states, dones):
-        """Fit model to batch from experience."""
+        """Generate target values, fit critic, then fit actor to critic gradients."""
         target_actions = self.actor.target_predict(next_states, single=False)
         target_q_values = self.critic.target_predict(next_states, target_actions,
                                                      single=False)
@@ -76,22 +94,29 @@ class DDPGModel(BaseModel):
         self.critic.target_fit()
 
     def predict(self, state):
-        """Return policy vector for given state from actor."""
+        """Use actor to produce policy vector for state."""
         return self.actor.predict(state)
 
 
 class ActorNetwork:
     """Actor component of DDPG model; the network that predicts a policy vector based on the state.
 
-    Parameters:
-        model (DDPGModel): instance of DDPGModel that Actor is associated with.
-        session (tf.Session): tensorflow session that the models live in.
-        base_input (keras.Layer): state input layer for both networks.
-        base_output (keras.Layer): state-transforming intermediate output layer.
-        activation (str/keras.Activation): final activation function just for actor model output.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        tf_optimizer (tf.train.Optimizer): full optimizer object.
-                                           MUST be tensorflow type, not Keras, unfortunately.
+    Parameters
+    ----------
+        model : pavlov.DDPGModel
+            instance of DDPGModel that Actor is associated with.
+        session : tf.Session
+            tensorflow session that the models live in.
+        base_input : keras.Layer
+            state input layer for both networks.
+        base_output : keras.Layer
+            state-transforming intermediate output layer.
+        activation : str or keras.Activation
+            final activation function just for actor model output.
+        tau : float
+            mixing rate for target network update; how fast it follows main network.
+        tf_optimizer : tf.train.Optimizer
+            optimizer for model.
     """
     def __init__(self, model, session, base_input, base_output,
                  activation, tau, tf_optimizer):
@@ -111,7 +136,12 @@ class ActorNetwork:
         self.optimize = tf_optimizer.apply_gradients(grads)
 
     def _create_model(self):
-        """Extend `base_topology` to produce a policy output."""
+        """Add final output layer and return Model object.
+
+        Returns
+        -------
+        keras.Model
+        """
         if self.base_output.shape.ndims > 2:
             out = Flatten()(self.base_output)
         else:
@@ -127,13 +157,21 @@ class ActorNetwork:
         return Model(self.base_input, out)
 
     def fit(self, states, action_gradients):
-        """Fit network based on state input and action gradients fed from critic."""
+        """Fit network based on state input and action gradients fed from critic.
+
+        Parameters
+        ----------
+        states : np.ndarray
+            states to fit to; input.
+        action_gradients : np.ndarray
+            gradients of critic model output with respect to the critic's action input; input.
+        """
         self.session.run(self.optimize, feed_dict={
                 self.model.input: states,
                 self.action_grad_input: action_gradients})
 
     def target_fit(self):
-        """Update target network towards main network according to `tau`."""
+        """Update target network towards main network according to tau."""
         W = [self.tau*aw + (1-self.tau)*tw
              for aw, tw in zip(self.model.get_weights(), self.target_model.get_weights())]
         self.target_model.set_weights(W)
@@ -141,10 +179,19 @@ class ActorNetwork:
     def _predict(self, model, state, single):
         """General function to predict policy for state with a given model.
 
-        Parameters:
-            model (keras.Model): either `self.model` or `self.target_model`.
-            state (np.array): state input to predict; could be single observation or batch.
-            single (bool): flag to indicate whether state input is single observation or batch.
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
         """
         if single:
             state = np.expand_dims(state, 0)
@@ -158,11 +205,29 @@ class ActorNetwork:
         return pred
 
     def predict(self, state, single=True):
-        """Apply `_predict` with `self.model`."""
+        """Predict a policy for the given state with the main model.
+
+        Parameters
+        ----------
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch
+            (default is True, that it is a single observation).
+        """
         return self._predict(self.model, state, single)
 
     def target_predict(self, state, single=True):
-        """Apply `_predict` with `self.target_model`."""
+        """Predict a policy for the given state with the target model.
+
+        Parameters
+        ----------
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch
+            (default is True, that it is a single observation).
+        """
         return self._predict(self.target_model, state, single)
 
 
@@ -191,7 +256,12 @@ class CriticNetwork:
         self.session.run(tf.global_variables_initializer())
 
     def _create_model(self):
-        """Extend `base_topology` to produce an action-value output (action as input)."""
+        """Add action input and final output layer and return Model object.
+
+        Returns
+        -------
+        keras.Model
+        """
         if self.base_output.shape.ndims > 2:
             base_out = Flatten()(self.base_output)
         else:
@@ -206,7 +276,17 @@ class CriticNetwork:
         return model
 
     def fit(self, states, actions, targets):
-        """Fit network based on state input, action from actor, targets from target critic."""
+        """Fit network to state and action input with targets from target network.
+
+        Parameters
+        ----------
+        states : np.ndarray
+            states to fit to; input.
+        actions : np.ndarray
+            actions to fit to; input.
+        targets : np.ndarray
+            targets to fit to; output.
+        """
         self.model.train_on_batch([states, actions], targets)
 
     def target_fit(self):
@@ -216,13 +296,23 @@ class CriticNetwork:
         self.target_model.set_weights(W)
 
     def _predict(self, model, state, action, single):
-        """General function to predict value for state and action with given model.
+        """General function to predict state-action value for given input with a given model.
 
-        Parameters:
-            model (keras.Model): either `self.model` or `self.target_model`.
-            state (np.array): state input to predict for; could be single observation or batch.
-            action (np.array): action input to predict for; could be single observation or batch.
-            single (bool): flag to indicate whether state/action input is single observation or batch.
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
         """
         if single:
             inputs = [np.expand_dims(state, 0), np.expand_dims(action, 0)]
@@ -232,15 +322,61 @@ class CriticNetwork:
             return model.predict(inputs)
 
     def predict(self, state, action, single=True):
-        """Apply `_predict` with `self.model`."""
+        """Predict a policy for the given state and action with the main model.
+
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
+        """
         return self._predict(self.model, state, single)
 
     def target_predict(self, state, action, single=True):
-        """Apply `_predict` with `self.target_model`."""
+        """Predict a policy for the given state and action with the target model.
+
+        Parameters
+        ----------
+        model : keras.Model
+            either `self.model` or `self.target_model`.
+        state : np.ndarray
+            state input to predict for; could be single observation or batch.
+        action : np.ndarray
+            action input to predict for; could be single observation or batch.
+        single : bool
+            flag to indicate whether state input is single observation or batch.
+
+        Returns
+        -------
+        pred : np.ndarray
+            the prediction of the model for the given state.
+        """
         return self._predict(self.target_model, state, action, single)
 
     def gradients(self, states, actions):
-        """Get gradient of model with respect to actions, to be passed to actor."""
+        """Get gradient of action with respect to the model parameters for given state and action.
+
+        Parameters
+        ----------
+        states : np.ndarray
+            state input to predict for.
+        actions : np.ndarray
+            action input to predict for.
+
+        Returns
+        -------
+        np.ndarray
+        """
         return self.session.run(self.action_grads, feed_dict={
                     self.model.input[0]: states,
                     self.model.input[1]: actions})[0]
