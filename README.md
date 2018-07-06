@@ -56,7 +56,6 @@ So a standard command to launch a Pavlov container from a Unix system would be (
 `docker run --name pavlov -d --rm -p 8888:8888 -p 6006:6006 -v $PWD:/home ntaylor22/pavlov-gpu`
 
 ## Getting Started
-### Making an agent
 Here's an example of an end-to-end usage of Pavlov to produce an agent for Breakout and have it run forever. Note that this agent doesn't actually solve Breakout with these settings, but once I figure out what settings solve it I will update the example.
 
 ```python
@@ -221,10 +220,19 @@ For any exploration module that requires an important value, such as the epsilon
 ## Run indefinitely and interrupt cleanly
 Agents are equipped with a method to run episodes indefinitely; essentially an infinite loop of `agent.run_episode()`. This allows you to start an agent, and then walk away, to return at any point and find it continuing to run, without having to try to calculate how long a certain number of episodes may take.
 
-Eventually, you're going to want to interrupt the agent's execution. If you interrupt with SIGINT (ctrl-C, or Jupyter's `Kernel->Interrupt`), you're likely going to stop the agent in an uncomfortable state. Here's the current approach to cleanly stopping infinite execution:
+Eventually, you're going to want to interrupt the agent's execution. Pavlov handles this by catching your KeyboardInterrupt, waiting until the completion of the current episode, then cleanly exiting before the start of the next episode. This way, you can run indefinitely and stop safely at any time.
 
 The docker image associated with Pavlov has a command called `pause`, which will wait until the end of an episode, then end the execution of `run_indefinitely()`. The way to run this command, assuming a container name of `pavlov`, is:
 
 `docker exec pavlov pause`
 
 At this point you should see your running Python process (whether Jupyter or Python) print `Stopping.`, and give back control of the program.
+
+## TODO
+- A3C, PPO. That should round out the main RL algorithms.
+- Evolutionary strategies.
+- Parallel training and acting. Parallelism and concurrency in general.
+- More exploration policies.
+- Make Keras use multiple GPUs if available.
+- Hyperparameter optimization module.
+- Extend to multiple input sources, if Gym spaces allow. Might not be possible.
