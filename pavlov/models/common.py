@@ -30,6 +30,10 @@ class BaseModel:
         self.session = tf.Session()
         K.set_session(self.session)
 
+    def has_nan(self):
+        """Throw an informative error if any model weights have gone to nan."""
+        pass
+
     def _configure_model(self):
         """Generate necessary models, probably finishing off `self.topology` to do so."""
         pass

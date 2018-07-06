@@ -4,13 +4,12 @@ import tensorflow as tf
 
 
 class Monitor:
-    """Keeps track of two metrics: reward and duration.
+    """Keeps track of metrics, run tensorboard, ensure model health.
 
     Prints average of previous episode metrics to stdout at defined interval.
     Writes logs for tensorboard to use for visualization of these metrics.
 
     Parameters:
-        agent (pavlov.Agent): the agent the metrics are tracking.
         save_path (str): file path for tensorboard logs.
                          default: /var/log/.
         report_freq (int): interval for printing to stdout, in number of episodes.
@@ -28,8 +27,8 @@ class Monitor:
         summary_writer (tf object): tensorflow op for summaries.
     """
     def __init__(self, report_freq, save_path):
-        self.save_path = save_path
         self.report_freq = report_freq
+        self.save_path = save_path
         self.rewards = collections.deque([0], maxlen=report_freq)
         self.durations = collections.deque([0], maxlen=report_freq)
         self.episode = 0
@@ -38,8 +37,8 @@ class Monitor:
         """Configure internal tensorflow ops for summary metrics."""
         episode_total_reward = tf.Variable(0.)
         episode_duration = tf.Variable(0.)
-        tf.summary.scalar(f'total_reward_episode', episode_total_reward)
-        tf.summary.scalar(f'duration_episode', episode_duration)
+        tf.summary.scalar('total_reward_episode', episode_total_reward)
+        tf.summary.scalar('duration_episode', episode_duration)
         summary_vars = [episode_total_reward, episode_duration]
         summary_placeholders = [tf.placeholder(tf.float32) for _ in summary_vars]
         update_ops = [summary_vars[i].assign(summary_placeholders[i])
@@ -48,6 +47,7 @@ class Monitor:
         return summary_placeholders, update_ops, summary_op
 
     def configure(self, agent):
+        """Associate monitor with agent, picking up information about its model."""
         self.agent = agent
         self.summary_placeholders, self.update_ops, self.summary_op = self._setup_summary()
         self.summary_writer = tf.summary.FileWriter(self.save_path, agent.model.session.graph)
@@ -60,6 +60,12 @@ class Monitor:
         """Add reward and increment duration for timestep."""
         self.rewards[-1] += reward
         self.durations[-1] += 1
+
+    def check_model_health(self):
+        """Perform checks to ensure that the model hasn't hit an unrecoverable state."""
+        if self.agent.model.has_nan():
+            msg = "Model has hit NaN weights: check #37 here: https://tinyurl.com/yahuwbno"
+            raise ValueError(msg)
 
     def write_summary(self):
         """Write metrics to tensorflow logs."""
@@ -75,14 +81,17 @@ class Monitor:
         """Write metrics to stdout in formatted string."""
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
-        if self.episode % self.report_freq == 0:
-            s = f"End of episode {self.episode+1}. Last {self.report_freq} episodes: "
+        if self.episode > 0 and self.episode % self.report_freq == 0:
+            s = f"End of episode {self.episode}. Last {self.report_freq} episodes: "
             s += f"Average reward: {avg_r}. "
             s += f"Average duration: {avg_d}."
             print(s)
 
     def new_episode(self, do_logging):
-        """Log if required, write to tensorboard, and Reset metric queues and move to next episode."""
+        """Prepare for new episode.
+        Tasks: check model health, log if required, write to tensorboard, start new metrics.
+        """
+        self.check_model_health()
         if do_logging:
             self.log_to_stdout()
         self.write_summary()

@@ -55,6 +55,10 @@ class DDPGModel(BaseModel):
                                     self.topology.input, self.topology.output,
                                     self.activation, self.tau, self.critic_optimizer)
 
+    def has_nan(self):
+        return (any(np.isnan(np.sum(W)) for W in self.actor.model.get_weights())
+                or any(np.isnan(np.sum(W)) for W in self.critic.model.get_weights()))
+
     def fit(self, states, actions, rewards, next_states, dones):
         """Fit model to batch from experience."""
         target_actions = self.actor.target_predict(next_states, single=False)
@@ -94,7 +98,7 @@ class ActorNetwork:
         self.model = model
         self.session = session
         K.set_session(self.session)
-        self.base_input, = base_input
+        self.base_input = base_input
         self.base_output = base_output
         self.activation = activation
         self.tau = tau

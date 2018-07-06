@@ -66,6 +66,9 @@ class DQNModel(BaseModel):
         model.compile(loss='mse', optimizer=self.optimizer)
         return model
 
+    def has_nan(self):
+        return any(np.isnan(np.sum(W)) for W in self.model.get_weights())
+
     def fit(self, states, actions, rewards, next_states, dones):
         """Fit network to batch of observations from replay buffer."""
         max_next_q = np.max(self.target_predict(next_states, single=False), axis=1)
