@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # docker hub info
 username=ntaylor22
 imagecpu=pavlov-cpu
@@ -24,9 +26,7 @@ git push origin master
 git push origin master --tags
 
 # rebuild images and bump docker versions
-docker build -t ntaylor22/pavlov-gpu:$new_version -t ntaylor22/pavlov-gpu --build-arg baseimage=ntaylor22/tensorflow-gpu . &
-docker build -t ntaylor22/pavlov-cpu:$new_version -t ntaylor22/pavlov-gpu --build-arg baseimage=ntaylor22/tensorflow-cpu . &
-wait
+docker/build
 
 # push images to hub
 docker login -u ntaylor22
