@@ -222,12 +222,6 @@ Agents are equipped with a method to run episodes indefinitely; essentially an i
 
 Eventually, you're going to want to interrupt the agent's execution. Pavlov handles this by catching your KeyboardInterrupt, waiting until the completion of the current episode, then cleanly exiting before the start of the next episode. This way, you can run indefinitely and stop safely at any time.
 
-The docker image associated with Pavlov has a command called `pause`, which will wait until the end of an episode, then end the execution of `run_indefinitely()`. The way to run this command, assuming a container name of `pavlov`, is:
-
-`docker exec pavlov pause`
-
-At this point you should see your running Python process (whether Jupyter or Python) print `Stopping.`, and give back control of the program.
-
 ## TODO
 - A3C, PPO. That should round out the main RL algorithms.
 - Evolutionary strategies.
