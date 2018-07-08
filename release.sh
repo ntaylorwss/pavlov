@@ -31,11 +31,12 @@ docker/build
 # push images to hub
 docker login -u ntaylor22
 docker push ntaylor22/pavlov-gpu:$new_version &
-docker push ntaylor22/pavlov-gpu &
 docker push ntaylor22/pavlov-cpu:$new_version &
+wait
+docker push ntaylor22/pavlov-gpu &
 docker push ntaylor22/pavlov-cpu &
 wait
 
 # re-run setup and push to pypi
-python3 setup.py sdist bdist_wheel
+python3 setup.py sdist
 twine upload dist/*
