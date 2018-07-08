@@ -97,7 +97,7 @@ agent = agents.Agent(env,
                      state_pipeline=pline,
                      model=model, actor=actor,
                      buffer_size=buffer_size, batch_size=batch_size,
-                     report_freq=1, warmup_length=50)
+                     report_frequency=1, warmup_length=50)
 agent.run_indefinitely()
 ```
 
