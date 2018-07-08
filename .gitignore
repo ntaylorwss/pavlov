@@ -1,5 +1,6 @@
 notebooks/.ipynb_checkpoints/
 __pycache__/
+.pytest_cache/
 pavlov/agents/keep_running.txt
 docker/jupyter_notebook_config.json
 Pavlov.egg-info/
