@@ -4,5 +4,6 @@ class ActionModelMismatchError(Exception):
     Example: value functions cannot be used directly in a continuous environment.
     """
     def __init__(self, action_type, model_type):
-        message = f"Action of type {action_type} and model of type {model_type} do not correspond"
+        message = "Action of type {} and model of type {} do not correspond".format(
+                    action_type, model_type)
         super().__init__(message)

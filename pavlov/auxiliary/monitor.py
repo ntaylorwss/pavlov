@@ -122,9 +122,10 @@ class Monitor:
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
         if self.episode > 0 and self.episode % self.report_frequency == 0:
-            s = f"End of episode {self.episode}. Last {self.report_frequency} episodes: "
-            s += f"Average reward: {avg_r}. "
-            s += f"Average duration: {avg_d}."
+            s = "End of episode {}. Last {} episodes: ".format(
+                 self.episode, self.report_frequency)
+            s += "Average reward: {}. ".format(avg_r)
+            s += "Average duration: {}.".format(avg_d)
             print(s)
 
     def new_episode(self, do_logging):
