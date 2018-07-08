@@ -29,7 +29,7 @@ def add_dim(axis=-1):
                      default: last.
     """
     def _add_dim(state, env):
-        return np.expand_dim(state, axis)
+        return np.expand_dims(state, axis)
     return _add_dim
 
 
@@ -42,7 +42,7 @@ def one_hot(max_val, min_val=0):
                          default: 0.
     """
     def _one_hot(state, env):
-        return (np.arange(min_val, max_val) == state[..., None]) * 1
+        return (np.arange(min_val, max_val+1) == state[..., None]) * 1
     return _one_hot
 
 
@@ -67,7 +67,7 @@ def rgb_to_grey(method='luminosity'):
 
 
 def rgb_to_binary():
-    """Converts 3D RGB image to 2D binary, where a 1 indicates a nonzero value."""
+    """Converts 3D RGB image to 3D binary with 1 channel, where a 1 indicates a nonzero value."""
     def _rgb_to_binary(state, env):
         return (state.max(axis=2) > 0).astype(int)[:, :, np.newaxis]
     return _rgb_to_binary
@@ -115,10 +115,10 @@ class stack_consecutive:
         if n_missing > 0:
             # fill missing with zeros
             filler = [np.zeros(state.shape)] * n_missing
-            out = np.dstack(filler + list(self.previous_states) + [state])
+            out = np.stack([state] + filler + list(self.previous_states))
         else:
-            out = np.dstack(list(self.previous_states) + [state])
-        self.previous_states.append(state)
+            out = np.stack([state] + list(self.previous_states))
+        self.previous_states.appendleft(state)
         return out
 
 

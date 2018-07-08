@@ -3,7 +3,7 @@ import keras.backend as K
 from custom_inherit import DocInheritMeta
 
 
-class BaseModel(metaclass=DocInheritMeta(style="numpy"):
+class BaseModel(metaclass=DocInheritMeta(style="numpy")):
     """Base class for all kinds of reinforcement learning models.
 
     All models should take in some form of feature-extracting topology,

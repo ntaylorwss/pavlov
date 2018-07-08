@@ -8,14 +8,6 @@ such as converting a policy vector from a Policy model to an integer for a Discr
 Often, an Actor will require at least one Schedule to govern a particular value, such as
 epsilon for the epsilon-greedy approach.
 
-Example
--------
-
-::
-
-    schedule = pavlov.auxiliary.schedules.ConstantSchedule(0.1)
-    actor = pavlov.actors.EpsilonGreedyActor(epsilon_schedule=schedule)
-
 Currently implemented exploration methods are:
 - Epsilon greedy.
 """
@@ -33,7 +25,7 @@ class Actor(metaclass=DocInheritMeta(style="numpy")):
 
     Attributes
     -------
-    explore_and_convert_fns : dict of {str : dict of {str : func}}
+    explore_and_convert_fns : dict of {str : dict of {str : function}}
         Functions corresponding to every combination of action space and model type.
         Action space is the first key, model type is the second key.
         The functions add exploration and convert the chosen action to the correct format.

@@ -51,8 +51,8 @@ class Monitor:
     def __init__(self, report_frequency, save_path):
         self.report_frequency = report_frequency
         self.save_path = save_path
-        self.rewards = collections.deque([0], maxlen=report_freq)
-        self.durations = collections.deque([0], maxlen=report_freq)
+        self.rewards = collections.deque([0], maxlen=report_frequency)
+        self.durations = collections.deque([0], maxlen=report_frequency)
         self.episode = 0
 
     def _setup_summary(self):
@@ -122,7 +122,7 @@ class Monitor:
         avg_r = np.mean(self.rewards)
         avg_d = np.mean(self.durations)
         if self.episode > 0 and self.episode % self.report_frequency == 0:
-            s = f"End of episode {self.episode}. Last {self.report_freq} episodes: "
+            s = f"End of episode {self.episode}. Last {self.report_frequency} episodes: "
             s += f"Average reward: {avg_r}. "
             s += f"Average duration: {avg_d}."
             print(s)

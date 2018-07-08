@@ -108,16 +108,15 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
         self.batch_size = batch_size
         self.warmup_length = warmup_length
         self.repeated_actions = repeated_actions
-        self.renders_by_episode = []
+        self.renders_by_episode = [[]]
         self.start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%s')
 
-        self._empty_running_file()
         self._warmup_replay_buffer()
 
     def _warmup_replay_buffer(self):
         """Run replay buffer-populating timesteps before actually starting."""
         for i in range(self.warmup_length):
-            reward, done = self.run_timestep(warming=True)
+            done = self.run_timestep(warming=True)
             if done:
                 self.reset()
 
@@ -179,9 +178,12 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
 
         timestep_reward = 0.
         for i in range(self.repeated_actions):
-            if not warming and render:
-                rendered_frame = self.env.render(mode='rgb_array')
-                self.renders_by_episode[-1].append(rendered_frame)
+            if render:
+                if not warming:
+                    rendered_frame = self.env.render(mode='rgb_array')
+                    self.renders_by_episode[-1].append(rendered_frame)
+            else:
+                self.renders_by_episode[-1].append([])
             self.env_state, frame_reward, done, info = self.env.step(action_for_env)
             timestep_reward += frame_reward
             if done:

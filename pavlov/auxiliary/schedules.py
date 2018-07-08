@@ -4,7 +4,7 @@ from copy import copy
 from custom_inherit import DocInheritMeta
 
 
-class Schedule(metaclass=DocInheritMeta(style="numpy"):
+class Schedule(metaclass=DocInheritMeta(style="numpy")):
     """Base class for value schedule, used for decaying values in exploration methods.
 
     Parameters
@@ -104,25 +104,28 @@ class ExponentialDecaySchedule(Schedule):
     ----------
     final_value : float
         value to be capped at.
-    decay_rate : float
-        rate of the exponential decay; the `a` in `e^(at)`.
+    num_steps : int
+        number of steps before value is capped.
 
     Attributes
     ----------
-        final_value : float
-            value to asymptote towards.
-        decay_rate : float
-            rate of the exponential decay; the `a` in `e^(at)`.
+    num_steps : int
+        number of steps before value is capped.
+    final_value : float
+        value to asymptote towards.
     """
-    def __init__(self, start_value, final_value, decay_rate, interval=-1):
-        # TODO: make it actually asymptote to final_value
+    def __init__(self, start_value, final_value, num_steps, interval=-1):
         super().__init__(start_value, interval)
+        self.start_value = start_value
         self.final_value = final_value
-        self.decay_rate = decay_rate
+        self.num_steps = num_steps
+        # calculate decay rate from available information
+        self.decay_rate = np.exp(np.log(self.final_value / self.start_value) / self.num_steps)
 
     def _step(self):
         """Decay by the defined exponential factor."""
-        self.value *= np.e ** (-self.decay_rate * self.timestep)
+        new_value = self.decay_rate**(self.timestep) * self.start_value
+        self.value = max([new_value, self.final_value])
 
 
 class ScopingPeriodicSchedule(Schedule):
