@@ -21,7 +21,7 @@ do
         else
             image=ntaylor22/pavlov-cpu
         fi
-        docker run --name pavlov -d -v $PWD:/home -p $port:8888 -p 6006:6006 $image
+        docker run --name pavlov -d -v $PWD:/home -p $port:8888 -p 6006:6006 $image:latest
         echo "Using port $port"
         break
     else

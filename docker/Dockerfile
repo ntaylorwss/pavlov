@@ -8,13 +8,17 @@ RUN apt-get update && apt-get install -y zlib1g-dev libjpeg-dev xvfb \
 
 RUN pip install 'gym[all]'
 
-ARG reqfile
-COPY $reqfile /tmp/requirements.txt
+COPY docker/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
-CMD jupyter notebook --allow-root
+CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root
 
 RUN mkdir /root/.jupyter && \
     echo "c.NotebookApp.token = u''" > /root/.jupyter/jupyter_notebook_config.py
 
 RUN rm -f /usr/bin/python && ln -s /usr/bin/python3.6 /usr/bin/python
+
+COPY pavlov/ /usr/local/lib/python3.6/dist-packages/pavlov
+COPY pavlov/ /home/pavlov
+COPY tests/ /tmp
+RUN python -m pytest /tmp
