@@ -20,33 +20,33 @@ class Monitor:
 
     Parameters
     ----------
-        report_frequency : int
-            interval for printing to stdout, in number of episodes.
-        save_path : str
-            file path for tensorboard logs.
+    report_frequency : int
+        interval for printing to stdout, in number of episodes.
+    save_path : str
+        file path for tensorboard logs.
 
     Attributes
     ----------
-        agent : pavlov.Agent
-            the agent the metrics are tracking.
-        save_path : str
-            file path for tensorboard logs
-        report_frequency : int
-            interval for printing to stdout, in number of episodes.
-        rewards : collections.deque
-            holds last `report_frequency` episodes' reward totals.
-        durations : collections.deque
-            holds last `report_frequency` episodes' durations.
-        episode : int
-            current episode number of agent.
-        summary_placeholders : list of tensorflow ops
-            tensorflow op for summaries.
-        update_ops : list of tensorflow ops
-            tensorflow op for summaries.
-        summary_op : list of tensorflow ops
-            tensorflow op for summaries.
-        summary_writer : list of tensorflow ops
-            tensorflow op for summaries.
+    agent : pavlov.Agent
+        the agent the metrics are tracking.
+    save_path : str
+        file path for tensorboard logs
+    report_frequency : int
+        interval for printing to stdout, in number of episodes.
+    rewards : collections.deque
+        holds last `report_frequency` episodes' reward totals.
+    durations : collections.deque
+        holds last `report_frequency` episodes' durations.
+    episode : int
+        current episode number of agent.
+    summary_placeholders : list of tensorflow ops
+        tensorflow op for summaries.
+    update_ops : list of tensorflow ops
+        tensorflow op for summaries.
+    summary_op : list of tensorflow ops
+        tensorflow op for summaries.
+    summary_writer : list of tensorflow ops
+        tensorflow op for summaries.
     """
     def __init__(self, report_frequency, save_path):
         self.report_frequency = report_frequency

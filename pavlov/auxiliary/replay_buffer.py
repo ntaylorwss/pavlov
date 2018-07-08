@@ -10,23 +10,23 @@ class ReplayBuffer:
 
     Parameters
     ----------
-        buffer_size : int
-            limit for how many observations to hold in total.
-        state_dtype : type
-            numpy datatype for states to be stored in (default is np.float32).
+    buffer_size : int
+        limit for how many observations to hold in total.
+    state_dtype : type
+        numpy datatype for states to be stored in (default is np.float32).
 
     Attributes
     ----------
-        buffer_size : int
-            limit for how many observations are held in total.
-        current_idx : int
-            current position in `buffer`; circular.
-        current_size : int
-            number of items in `buffer`; caps at `buffer_size`.
-        state_dtype : type
-            numpy datatype for states to be stored in.
-        buffer : dict of {str : np.ndarray}
-            all observations as dictionary of arrays.
+    buffer_size : int
+        limit for how many observations are held in total.
+    current_idx : int
+        current position in `buffer`; circular.
+    current_size : int
+        number of items in `buffer`; caps at `buffer_size`.
+    state_dtype : type
+        numpy datatype for states to be stored in.
+    buffer : dict of {str : np.ndarray}
+        all observations as dictionary of arrays.
     """
     def __init__(self, buffer_size, state_dtype):
         self.buffer_size = buffer_size

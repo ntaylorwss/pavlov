@@ -16,12 +16,12 @@ class Schedule(metaclass=DocInheritMeta(style="numpy")):
 
     Attributes
     ----------
-        t : int
-            current timestep index.
-        value : float
-            current value.
-        interval : int
-            update interval in number of timesteps.
+    t : int
+        current timestep index.
+    value : float
+        current value.
+    interval : int
+        update interval in number of timesteps.
     """
     def __init__(self, start_value, interval=-1):
         self.timestep = 0
@@ -171,10 +171,10 @@ def graph_schedule(schedule, n_vals):
 
     Parameters
     ----------
-        schedule : pavlov.Schedule
-            the schedule to be examined.
-        n_vals : int
-            number of values to visualize; the domain of the graph is [0, n_vals).
+    schedule : pavlov.Schedule
+        the schedule to be examined.
+    n_vals : int
+        number of values to visualize; the domain of the graph is [0, n_vals).
     """
     this_schedule = copy(schedule)
     this_schedule.interval = 1

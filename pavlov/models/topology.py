@@ -110,10 +110,10 @@ class DenseTopology(Topology):
 
         Parameters
         ----------
-            layer_sizes : list of int
-                number of units in each dense layer.
-            activation : str
-                activation function to be used in each layer.
+        layer_sizes : list of int
+            number of units in each dense layer.
+        activation : str
+            activation function to be used in each layer.
 
         Returns
         -------

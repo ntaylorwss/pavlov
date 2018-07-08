@@ -13,8 +13,10 @@ def to_array():
 def reshape_array(new_shape):
     """Reshape state array to given new shape.
 
-    Parameters:
-        new_shape (tuple): target shape of array.
+    Parameters
+    ----------
+    new_shape : tuple
+        target shape of array.
     """
     def _reshape_array(state, env):
         return np.reshape(state, new_shape)
@@ -24,9 +26,10 @@ def reshape_array(new_shape):
 def add_dim(axis=-1):
     """Add dimension to state array.
 
-    Parameters:
-        pos (int): axis along which to inject new dimension
-                     default: last.
+    Parameters
+    ----------
+    pos : int
+        axis along which to inject new dimension (default is -1, which means last).
     """
     def _add_dim(state, env):
         return np.expand_dims(state, axis)
@@ -36,10 +39,12 @@ def add_dim(axis=-1):
 def one_hot(max_val, min_val=0):
     """One-hot encode entire state array according to defined range of integer values.
 
-    Parameters:
-        max_val (int): maximum categorical value in state.
-        min_val (int): minimum categorical value in state.
-                         default: 0.
+    Parameters
+    ----------
+    max_val : int
+        maximum categorical value in state.
+    min_val : int
+        minimum categorical value in state (default is 0).
     """
     def _one_hot(state, env):
         return (np.arange(min_val, max_val+1) == state[..., None]) * 1
@@ -49,10 +54,10 @@ def one_hot(max_val, min_val=0):
 def rgb_to_grey(method='luminosity'):
     """Convert 3D RGB image to 2D greyscale image using one of 3 algorithms.
 
-    Parameters:
-        method (str): algorithm for averaging (https://tinyurl.com/ybjddjjy).
-                      options: lightness, average, luminosity
-                      default: luminosity.
+    Parameters
+    ----------
+    method : {'luminosity', 'average', 'lightness'}
+        algorithm for averaging.
     """
     def _rgb_to_grey(state, env):
         if method == 'lightness':
@@ -77,8 +82,10 @@ def rgb_to_binary():
 def downsample(new_shape):
     """Resize input image to smaller shape via interpolation.
 
-    Parameters:
-        new_shape (tuple): target shape of array after resizing.
+    Parameters
+    ----------
+    new_shape : tuple
+        target shape of array after resizing.
     """
     def _downsample(state, env):
         if any(new_shape[i] > state.shape[i] for i in range(len(new_shape))):
@@ -90,8 +97,10 @@ def downsample(new_shape):
 def upsample(new_shape):
     """Resize input image to larger shape via interpolation.
 
-    Parameters:
-        new_shape (tuple): target shape of array after resizing.
+    Parameters
+    ----------
+    new_shape : tuple
+        target shape of array after resizing.
     """
     def _upsample(state, env):
         if any(new_shape[i] < state.shape[i] for i in range(len(new_shape))):

@@ -31,53 +31,53 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
 
     Parameters
     ----------
-        env : gym.Env
-            the environment the agent is acting in.
-        state_pipeline : list of functions
-            a list of functions that the state is passed through sequentially.
-        model : pavlov.Model
-            a reinforcement learning model that guides the agent.
-        actor : pavlov.Actor
-            responsible for converting model predictions to actions.
-        buffer_size : int
-            limit for how many observations to hold in replay buffer.
-        batch_size : int
-            number of observations to pull from replay_buffer at fit time.
-        warmup_length : int
-            number of random timesteps to execute before beginning
-            to learn and apply the model. Replay buffer will be populated.
-        repeated_actions : int
-            number of env timesteps to repeat a chosen action for.
-        report_frequency : int
-            interval for printing to stdout, in number of episodes.
-        state_dtype : type
-            numpy datatype for states to be stored in in replay buffer.
+    env : gym.Env
+        the environment the agent is acting in.
+    state_pipeline : list of functions
+        a list of functions that the state is passed through sequentially.
+    model : pavlov.Model
+        a reinforcement learning model that guides the agent.
+    actor : pavlov.Actor
+        responsible for converting model predictions to actions.
+    buffer_size : int
+        limit for how many observations to hold in replay buffer.
+    batch_size : int
+        number of observations to pull from replay_buffer at fit time.
+    warmup_length : int
+        number of random timesteps to execute before beginning
+        to learn and apply the model. Replay buffer will be populated.
+    repeated_actions : int
+        number of env timesteps to repeat a chosen action for.
+    report_frequency : int
+        interval for printing to stdout, in number of episodes.
+    state_dtype : type
+        numpy datatype for states to be stored in in replay buffer.
 
     Attributes
     ----------
-        env : gym.Env
-            the environment the agent is acting in.
-        env_state : np.array
-            current state of environment.
-        state_pipeline : list of functions
-            a list of functions that the state is passed through sequentially.
-        model : pavlov.Model
-            a reinforcement learning model that guides the agent.
-        actor : pavlov.Actor
-            responsible for converting model predictions to actions.
-        replay_buffer : pavlov.ReplayBuffer
-            collection of historical observations.
-        batch_size : int
-            number of observations to pull from replay_buffer at fit time.
-        warmup_length : int
-            number of random timesteps to execute before beginning
-            to learn and apply the model. Replay buffer will be populated.
-        repeated_actions : int
-            number of env timesteps to repeat a chosen action for.
-        monitor : pavlov.Monitor
-            keeps track of metrics and logs them.
-        renders_by_episode : list of np.array
-            environment timestep renderings by episode.
+    env : gym.Env
+        the environment the agent is acting in.
+    env_state : np.array
+        current state of environment.
+    state_pipeline : list of functions
+        a list of functions that the state is passed through sequentially.
+    model : pavlov.Model
+        a reinforcement learning model that guides the agent.
+    actor : pavlov.Actor
+        responsible for converting model predictions to actions.
+    replay_buffer : pavlov.ReplayBuffer
+        collection of historical observations.
+    batch_size : int
+        number of observations to pull from replay_buffer at fit time.
+    warmup_length : int
+        number of random timesteps to execute before beginning
+        to learn and apply the model. Replay buffer will be populated.
+    repeated_actions : int
+        number of env timesteps to repeat a chosen action for.
+    monitor : pavlov.Monitor
+        keeps track of metrics and logs them.
+    renders_by_episode : list of np.array
+        environment timestep renderings by episode.
     """
     # incompatible pairs of action space type and model type
     incompatibles = [('box', 'dqnmodel'), ('discrete', 'ddpgmodel'),
@@ -127,11 +127,11 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
 
         Parameters
         ----------
-            episode_num : int
-                episode number that you want to take a video of (one-indexed).
-            out_dir : str
-                directory where you would like to place video file.
-                filename is auto-generated.
+        episode_num : int
+            episode number that you want to take a video of (one-indexed).
+        out_dir : str
+            directory where you would like to place video file.
+            filename is auto-generated.
         """
         frames = self.renders_by_episode[episode-1]
         shape = frames[0].shape

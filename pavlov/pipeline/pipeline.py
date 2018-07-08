@@ -3,10 +3,10 @@ class Pipeline:
 
     Attributes
     ----------
-        transformations : list of function
-            the sequence of functions to be applied.
-        out_dims : list of int
-            the dimensions of the resulting, transformed state.
+    transformations : list of function
+        the sequence of functions to be applied.
+    out_dims : list of int
+        the dimensions of the resulting, transformed state.
     """
     def __init__(self):
         self.transformations = []
@@ -42,6 +42,7 @@ class Pipeline:
             state to pass through pipeline.
 
         Returns
+        -------
         out : np.ndarray
             result of applying pipeline to state.
         """

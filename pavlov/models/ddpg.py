@@ -103,20 +103,20 @@ class ActorNetwork:
 
     Parameters
     ----------
-        model : pavlov.DDPGModel
-            instance of DDPGModel that Actor is associated with.
-        session : tf.Session
-            tensorflow session that the models live in.
-        base_input : keras.Layer
-            state input layer for both networks.
-        base_output : keras.Layer
-            state-transforming intermediate output layer.
-        activation : str or keras.Activation
-            final activation function just for actor model output.
-        tau : float
-            mixing rate for target network update; how fast it follows main network.
-        tf_optimizer : tf.train.Optimizer
-            optimizer for model.
+    model : pavlov.DDPGModel
+        instance of DDPGModel that Actor is associated with.
+    session : tf.Session
+        tensorflow session that the models live in.
+    base_input : keras.Layer
+        state input layer for both networks.
+    base_output : keras.Layer
+        state-transforming intermediate output layer.
+    activation : str or keras.Activation
+        final activation function just for actor model output.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    tf_optimizer : tf.train.Optimizer
+        optimizer for model.
     """
     def __init__(self, model, session, base_input, base_output,
                  activation, tau, tf_optimizer):
@@ -234,13 +234,20 @@ class ActorNetwork:
 class CriticNetwork:
     """Critic component of DDPG model; the network that predicts a state-action value.
 
-    Parameters:
-        model (DDPGModel): instance of DDPGModel that Critic is associated with.
-        session (tf.Session): tensorflow session that the models live in.
-        base_input (keras.Layer): state input layer for both networks.
-        base_output (keras.Layer): state-transforming intermediate output layer.
-        tau (float): mixing rate for target network update; how fast it follows main network.
-        optimizer (keras.Optimizer): full optimizer object.
+    Parameters
+    ----------
+    model : DDPGModel
+        instance of DDPGModel that Critic is associated with.
+    session : tf.Session
+        tensorflow session that the models live in.
+    base_input : keras.Layer
+        state input layer for both networks.
+    base_output : keras.Layer
+        state-transforming intermediate output layer.
+    tau : float
+        mixing rate for target network update; how fast it follows main network.
+    optimizer : keras.Optimizer
+        full optimizer object.
     """
     def __init__(self, model, session, base_input, base_output, tau, optimizer):
         self.model = model

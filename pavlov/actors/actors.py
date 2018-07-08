@@ -248,7 +248,7 @@ class EpsilonGreedyActor(Actor):
         return action_for_model, action_for_env
 
     def _discrete_value(self, pred):
-        """
+        """Apply epsilon-greedy to discrete action space with a value-based model.
 
         Returns
         -------
@@ -260,7 +260,7 @@ class EpsilonGreedyActor(Actor):
         return self._discrete_policy(pred)
 
     def _multidiscrete_policy(self, pred):
-        """
+        """Apply epsilon-greedy to multidiscrete action space with a policy-based model.
 
         Returns
         -------
@@ -278,7 +278,7 @@ class EpsilonGreedyActor(Actor):
         return action_for_model, action_for_env
 
     def _multidiscrete_value(self, pred):
-        """
+        """Apply epsilon-greedy to multidiscrete action space with a value-based model.
 
         Returns
         -------
@@ -290,7 +290,7 @@ class EpsilonGreedyActor(Actor):
         return self._multidiscrete_policy(pred)
 
     def _box_policy(self, pred):
-        """
+        """Apply epsilon-greedy to box action space with a policy-based model.
 
         Returns
         -------
@@ -306,7 +306,7 @@ class EpsilonGreedyActor(Actor):
             return pred, pred
 
     def _box_value(self, pred):
-        """
+        """Apply epsilon-greedy to box action space with a value-based model.
 
         Returns
         -------
@@ -318,7 +318,7 @@ class EpsilonGreedyActor(Actor):
         raise ActionModelMismatchError('box', 'value')
 
     def _multibinary_policy(self, pred):
-        """
+        """Apply epsilon-greedy to multibinary action space with a policy-based model.
 
         Returns
         -------
@@ -330,7 +330,7 @@ class EpsilonGreedyActor(Actor):
         return self._discrete_policy(pred)
 
     def _multibinary_value(self, pred):
-        """
+        """Apply epsilon-greedy to multibinary action space with a value-based model.
 
         Returns
         -------
