@@ -82,7 +82,7 @@ dqn_config = {
 }
 model = models.DQNModel(topology, **dqn_config)
 
-epsilon_schedule = auxiliary.schedules.LinearDecay(1.0, 0.1, 500, -1)
+epsilon_schedule = auxiliary.schedules.LinearDecaySchedule(1.0, 0.1, 500, -1)
 actor = actors.EpsilonGreedyActor(epsilon_schedule)
 buffer_size = 10000
 batch_size = 64
