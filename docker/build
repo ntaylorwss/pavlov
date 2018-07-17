@@ -10,8 +10,10 @@ version=$(<VERSION)
 
 docker build  -t ntaylor22/pavlov-cpu:$version -t ntaylor22/pavlov-cpu:latest \
     --build-arg baseimage=ntaylor22/tensorflow-cpu \
-    -f docker/Dockerfile . &
+    -f docker/Dockerfile .
 docker build  -t ntaylor22/pavlov-gpu:$version -t ntaylor22/pavlov-gpu:latest \
     --build-arg baseimage=ntaylor22/tensorflow-gpu \
-    -f docker/Dockerfile . &
-wait
+    -f docker/Dockerfile .
+docker build  -t ntaylor22/pavlov-gpu:latest-dev \
+    --build-arg baseimage=ntaylor22/tensorflow-gpu \
+    -f docker/Dockerfile-dev .

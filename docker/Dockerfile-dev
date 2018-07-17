@@ -18,7 +18,4 @@ RUN mkdir /root/.jupyter && \
 
 RUN rm -f /usr/bin/python && ln -s /usr/bin/python3.6 /usr/bin/python
 
-COPY pavlov/ /usr/local/lib/python3.6/dist-packages/pavlov
-
 COPY tests/ /tmp
-RUN python -m pytest /tmp
