@@ -188,8 +188,10 @@ To write an entirely customized Keras model graph, do the following:
     - e.g. `class MyModel(pavlov.models.topology.Topology):`
 2. Override the method `define_graph(self, ...)`, filling in `...` with whatever parameters your configuration requires, e.g. `dense_layer_sizes`. Alternatively, you can have no parameters:
     - e.g. `def define_graph(self, dense_layer_sizes, activation, weight_initializer):`
+    - e.g. `def define_graph(self):`
 3. Initialize a new instance of your model class by passing your arguments for the parameters you provided in the declaration of `define_graph`:
     - e.g. `model = MyModel(dense_layer_sizes=[16, 8, 4], activation='relu', weight_initializer='glorot_normal')`
+    - e.g. `model = MyModel()`
 
 With this design, you can create any Keras graph you want, and parameterize it however you wish.
 
