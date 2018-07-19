@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
-import keras.backend as K
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.layers import Input, Dense, Conv2D, Flatten, Activation, Multiply
+import tensorflow.keras.backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Activation, Multiply
 from .common import BaseModel
 
 
@@ -54,23 +54,24 @@ class DDPGModel(BaseModel):
         A Keras optimizer will not work for this particular parameter.
     """
 
-    def __init__(self, topology, activation, gamma, tau,
+    def __init__(self, topology, gamma, tau, actor_activation,
                  actor_optimizer, critic_optimizer):
         super().__init__(topology)
         self.prediction_type = 'policy'
         self.gamma = gamma
         self.tau = tau
+        self.actor_activation = actor_activation
         self.actor_optimizer = actor_optimizer
         self.critic_optimizer = critic_optimizer
 
-    def _configure_model(self):
+    def _configure_model(self, session):
         """Generate actor and critic models."""
-        self.actor = ActorNetwork(self, self.session,
+        self.actor = ActorNetwork(self, session,
                                   self.topology.input, self.topology.output,
-                                  self.activation, self.tau, self.actor_optimizer)
-        self.critic = CriticNetwork(self, self.session,
+                                  self.actor_activation, self.tau, self.actor_optimizer)
+        self.critic = CriticNetwork(self, session,
                                     self.topology.input, self.topology.output,
-                                    self.activation, self.tau, self.critic_optimizer)
+                                    self.tau, self.critic_optimizer)
 
     def has_nan(self):
         """Check both actor and critic models for nan."""
@@ -105,8 +106,6 @@ class ActorNetwork:
     ----------
     model : pavlov.DDPGModel
         instance of DDPGModel that Actor is associated with.
-    session : tf.Session
-        tensorflow session that the models live in.
     base_input : keras.Layer
         state input layer for both networks.
     base_output : keras.Layer
@@ -118,18 +117,18 @@ class ActorNetwork:
     tf_optimizer : tf.train.Optimizer
         optimizer for model.
     """
-    def __init__(self, model, session, base_input, base_output,
+    def __init__(self, ddpg_model, session, base_input, base_output,
                  activation, tau, tf_optimizer):
-        self.model = model
+        self.ddpg_model = ddpg_model
         self.session = session
-        K.set_session(self.session)
         self.base_input = base_input
         self.base_output = base_output
         self.activation = activation
         self.tau = tau
         self.model = self._create_model()
         self.target_model = self._create_model()
-        self.action_grad_input = K.placeholder(shape=(None, self.action_dim))
+        action_dim = np.prod(self.ddpg_model.action_space.shape)
+        self.action_grad_input = K.placeholder(shape=[None, action_dim])
         self.model_grad = tf.gradients(self.model.output, self.model.trainable_weights,
                                        -self.action_grad_input)
         grads = list(zip(self.model_grad, self.model.trainable_weights))
@@ -153,7 +152,7 @@ class ActorNetwork:
         else:
             act = self.activation
         # flatten action shape into vector
-        out = act(Dense(np.prod(self.model.action_space.shape)))
+        out = act(Dense(np.prod(self.ddpg_model.action_space.shape))(out))
         return Model(self.base_input, out)
 
     def fit(self, states, action_gradients):
@@ -166,9 +165,10 @@ class ActorNetwork:
         action_gradients : np.ndarray
             gradients of critic model output with respect to the critic's action input; input.
         """
-        self.session.run(self.optimize, feed_dict={
-                self.model.input: states,
-                self.action_grad_input: action_gradients})
+        with self.session.as_default():
+            self.session.run(self.optimize, feed_dict={
+                                self.model.input: states,
+                                self.action_grad_input: action_gradients})
 
     def target_fit(self):
         """Update target network towards main network according to tau."""
@@ -196,12 +196,12 @@ class ActorNetwork:
         if single:
             state = np.expand_dims(state, 0)
             pred = model.predict(state)[0]
-            if len(self.action_space.shape) > 2:
-                pred = pred.reshape(self.action_space.shape)
+            if len(self.ddpg_model.action_space.shape) > 1:
+                pred = pred.reshape(self.ddpg_model.action_space.shape)
         else:
             pred = model.predict(state)
-            if len(self.action_space.shape) > 2:
-                pred = pred.reshape([pred.shape[0]] + list(self.action_space.shape))
+            if len(self.ddpg_model.action_space.shape) > 1:
+                pred = pred.reshape([pred.shape[0]] + list(self.ddpg_model.action_space.shape))
         return pred
 
     def predict(self, state, single=True):
@@ -238,8 +238,6 @@ class CriticNetwork:
     ----------
     model : DDPGModel
         instance of DDPGModel that Critic is associated with.
-    session : tf.Session
-        tensorflow session that the models live in.
     base_input : keras.Layer
         state input layer for both networks.
     base_output : keras.Layer
@@ -249,10 +247,9 @@ class CriticNetwork:
     optimizer : keras.Optimizer
         full optimizer object.
     """
-    def __init__(self, model, session, base_input, base_output, tau, optimizer):
-        self.model = model
+    def __init__(self, ddpg_model, session, base_input, base_output, tau, optimizer):
+        self.ddpg_model = ddpg_model
         self.session = session
-        K.set_session(self.session)
         self.base_input = base_input
         self.base_output = base_output
         self.tau = tau
@@ -273,9 +270,9 @@ class CriticNetwork:
             base_out = Flatten()(self.base_output)
         else:
             base_out = self.base_output
-        in_shape = (np.prod(self.action_space.shape),)
+        in_shape = (np.prod(self.ddpg_model.action_space.shape),)
         action_in = Input(in_shape)
-        out = Dense(in_shape, activation='relu')(base_out)
+        out = Dense(in_shape[0], activation='relu')(base_out)
         out = Multiply()([out, action_in])
         out = Dense(1)(out)
         model = Model([self.base_input, action_in], out)
@@ -384,6 +381,7 @@ class CriticNetwork:
         -------
         np.ndarray
         """
-        return self.session.run(self.action_grads, feed_dict={
-                    self.model.input[0]: states,
-                    self.model.input[1]: actions})[0]
+        with self.session.as_default():
+            return self.session.run(self.action_grads, feed_dict={
+                                               self.model.input[0]: states,
+                                               self.model.input[1]: actions})[0]

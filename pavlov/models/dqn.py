@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
-import keras.backend as K
-from keras.models import Model
-from keras.layers import Input, Dense, Flatten
-from keras.layers import Multiply
+import tensorflow.keras.backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Flatten
+from tensorflow.keras.layers import Multiply
 from .. import util
 from .common import BaseModel
 
@@ -42,7 +42,7 @@ class DQNModel(BaseModel):
         self.tau = tau
         self.optimizer = optimizer
 
-    def _configure_model(self):
+    def _configure_model(self, session):
         """Convert given topology to identical main and target models."""
         self.model = self._topology_to_model()
         self.target_model = self._topology_to_model()

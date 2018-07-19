@@ -22,28 +22,25 @@ class BaseModel(metaclass=DocInheritMeta(style="numpy")):
     ----------
     topology : pavlov.Topology
         feature-extracting Keras model graph object defining the body of the model.
-    session : tf.Session
-        Tensorflow session that the model(s) will live in.
     """
     def __init__(self, topology):
         self.topology = topology
-        self.session = tf.Session()
-        K.set_session(self.session)
 
     def has_nan(self):
         """Throw an informative error if any model weights have gone to nan."""
         pass
 
-    def _configure_model(self):
+    def _configure_model(self, session):
         """Generate necessary models, probably finishing off `self.topology` to do so."""
         pass
 
-    def configure(self, agent):
+    def configure(self, agent, session):
         """Associate model with action space from environment; convert topology to model."""
+        self.batch_size = agent.batch_size
         self.action_space = agent.env.action_space
         self.action_type = self.action_space.__class__.__name__.lower()
         self.topology.configure(agent)
-        self._configure_model()
+        self._configure_model(session)
 
     def fit(self, states, actions, rewards, next_states, dones):
         """Fit model to batch from experience. May or may not use all inputs.

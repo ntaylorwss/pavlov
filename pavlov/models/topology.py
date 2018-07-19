@@ -1,5 +1,5 @@
-from keras.layers import Input, Flatten, concatenate, Activation
-from keras.layers import Dense, Conv2D
+from tensorflow.keras.layers import Input, Flatten, concatenate, Activation
+from tensorflow.keras.layers import Dense, Conv2D
 
 
 class Topology:
