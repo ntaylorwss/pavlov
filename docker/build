@@ -17,3 +17,6 @@ docker build  -t ntaylor22/pavlov-gpu:$version -t ntaylor22/pavlov-gpu:latest \
 docker build  -t ntaylor22/pavlov-gpu:latest-dev \
     --build-arg baseimage=ntaylor22/tensorflow-gpu \
     -f docker/Dockerfile-dev .
+docker build  -t ntaylor22/pavlov-cpu:latest-dev \
+    --build-arg baseimage=ntaylor22/tensorflow-cpu \
+    -f docker/Dockerfile-dev .
