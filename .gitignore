@@ -8,3 +8,4 @@ dist/
 build/
 .isroot
 videos/
+.local/

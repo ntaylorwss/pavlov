@@ -18,4 +18,6 @@ RUN mkdir /root/.jupyter && \
 
 RUN rm -f /usr/bin/python && ln -s /usr/bin/python3.6 /usr/bin/python
 
-COPY tests/ /tmp
+RUN useradd -ms /bin/bash pavlov
+USER pavlov
+WORKDIR /home/pavlov

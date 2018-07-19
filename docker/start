@@ -40,7 +40,7 @@ do
             else
                 image=ntaylor22/pavlov$suffix$tag
             fi
-            docker run --name pavlov -d -v $PWD:/home -p $jup_port:8888 -p $tboard_port:6006 $image
+            docker run --name pavlov -d -v $PWD:/home/pavlov -p $jup_port:8888 -p $tboard_port:6006 $image
             echo "Using ports $jup_port and $tboard_port"
             break
         else

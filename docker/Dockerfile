@@ -11,8 +11,6 @@ RUN pip install 'gym[all]'
 COPY docker/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
-CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook --allow-root
-
 RUN mkdir /root/.jupyter && \
     echo "c.NotebookApp.token = u''" > /root/.jupyter/jupyter_notebook_config.py
 
@@ -22,3 +20,9 @@ COPY pavlov/ /usr/local/lib/python3.6/dist-packages/pavlov
 
 COPY tests/ /tmp
 RUN python -m pytest /tmp
+
+RUN useradd -ms /bin/bash pavlov
+USER pavlov
+WORKDIR /home/pavlov
+
+CMD xvfb-run -s '-screen 0 1400x900x24' jupyter notebook
