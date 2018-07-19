@@ -1,4 +1,10 @@
 # Release History
+## 0.2.1
+### Pavlov changes
+- Made DDPG model actually work properly (apparently it was not before).
+- Change from Keras to TF.Keras.
+- Fixed bug that caused Tensorflow to crash when creating multiple Agents in the same Python process.
+
 ## 0.2.0
 ### Docker changes
 - Make testing a part of the build procedure.
