@@ -4,6 +4,8 @@ Agents have a simple API: you can reset the environment, run a timestep, run an 
 or run the agent indefinitely (and stop safely whenever you want).
 """
 
+import tensorflow as tf
+import tensorflow.keras.backend as K
 import datetime
 import numpy as np
 import cv2
@@ -11,6 +13,7 @@ from custom_inherit import DocInheritMeta
 from ..auxiliary.replay_buffer import ReplayBuffer
 from ..auxiliary.monitor import Monitor
 from .. import util
+from IPython.core.debugger import set_trace
 
 
 class Agent(metaclass=DocInheritMeta(style="numpy")):
@@ -91,8 +94,18 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
             if (env.action_space.__class__.__name__.lower() == space_type
                     and model.__class__.__name__.lower() == model_type):
                 raise util.exceptions.ActionModelMismatchError(space_type, model_type)
+
+        self.session = tf.Session()
+        K.set_session(self.session)
+
         self.env = env
         self.env_state = self.env.reset()
+
+        self.batch_size = batch_size
+        self.warmup_length = warmup_length
+        self.repeated_actions = repeated_actions
+        self.renders_by_episode = [[]]
+        self.start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%s')
 
         self.state_pipeline = state_pipeline
         self.replay_buffer = ReplayBuffer(buffer_size, state_dtype)
@@ -101,17 +114,16 @@ class Agent(metaclass=DocInheritMeta(style="numpy")):
         self.monitor = Monitor(report_frequency, '/var/log')
         self.state_pipeline.configure(self)
         self.replay_buffer.configure(self)
-        self.model.configure(self)
+        self.model.configure(self, self.session)
         self.actor.configure(self)
-        self.monitor.configure(self)
-
-        self.batch_size = batch_size
-        self.warmup_length = warmup_length
-        self.repeated_actions = repeated_actions
-        self.renders_by_episode = [[]]
-        self.start_timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%s')
+        self.monitor.configure(self, self.session)
 
         self._warmup_replay_buffer()
+
+    @property
+    def episode(self):
+        """Gives the current episode number."""
+        return len(self.renders_by_episode)
 
     def _warmup_replay_buffer(self):
         """Run replay buffer-populating timesteps before actually starting."""
