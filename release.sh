@@ -16,6 +16,7 @@ fi
 # get new version
 echo "Current version number: $version"
 read -p "New version number: " new_version
+sleep 1
 
 # bump version, push
 echo $new_version > VERSION
