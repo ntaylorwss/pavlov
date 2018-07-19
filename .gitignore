@@ -1,11 +1,13 @@
 notebooks/.ipynb_checkpoints/
 __pycache__/
 .pytest_cache/
-pavlov/agents/keep_running.txt
-docker/jupyter_notebook_config.json
+.local/
+.bash_history
+.cache/
+.python_history
+.keras/
 Pavlov.egg-info/
 dist/
 build/
 .isroot
 videos/
-.local/
