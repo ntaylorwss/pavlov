@@ -58,7 +58,7 @@ class ReplayBuffer:
         elif self.action_type == 'multidiscrete':
             buffer['actions'] = [np.zeros((self.buffer_size, n)) for n in self.action_space.nvec]
         elif self.action_type == 'box':
-            buffer['actions'] = np.zeros((self.buffer_size, self.action_space.shape))
+            buffer['actions'] = np.zeros([self.buffer_size] + list(self.action_space.shape))
         elif self.action_type == 'multibinary':
             buffer['actions'] = [np.zeros((self.buffer_size, 2)) for _ in range(self.action_space.n)]
         self.buffer = buffer
